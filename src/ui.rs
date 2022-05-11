@@ -9,7 +9,7 @@ use tui::{
     Frame,
 };
 
-use crate::{app::App, utils::uppercase_first_letter};
+use crate::{app::App, utils::PreparePokemonNameForDisplay};
 
 type CrosstermFrame<'a> = Frame<'a, CrosstermBackend<Stdout>>;
 
@@ -21,9 +21,10 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
         .items
         .iter()
         .map(|pokemon| {
-            let name = pokemon.name.as_ref().unwrap().as_ref();
+            let name: &str = pokemon.name.as_ref().unwrap().as_ref();
+            let name = name.to_string();
 
-            ListItem::new(uppercase_first_letter(name))
+            ListItem::new(name.split_capitalize())
         })
         .collect();
 
