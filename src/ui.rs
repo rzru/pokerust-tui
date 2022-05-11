@@ -4,11 +4,12 @@ use tui::{
     backend::CrosstermBackend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
-    widgets::{Block, BorderType, Borders, List, ListItem},
+    text::Spans,
+    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph, Wrap},
     Frame,
 };
 
-use crate::{app::App, utils::uppercase_first_letter, APP_LABEL};
+use crate::{app::App, utils::uppercase_first_letter};
 
 type CrosstermFrame<'a> = Frame<'a, CrosstermBackend<Stdout>>;
 
@@ -31,10 +32,10 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
         layout_chunks[0],
         &mut app.stateful_list.state,
     );
-    frame.render_widget(prepare_main_block(), layout_chunks[1]);
+    frame.render_widget(prepare_main_block(frame), layout_chunks[1]);
 }
 
-fn prepare_chunks(frame: &mut CrosstermFrame) -> Vec<Rect> {
+fn prepare_chunks(frame: &CrosstermFrame) -> Vec<Rect> {
     Layout::default()
         .direction(Direction::Horizontal)
         .margin(1)
@@ -42,17 +43,39 @@ fn prepare_chunks(frame: &mut CrosstermFrame) -> Vec<Rect> {
         .split(frame.size())
 }
 
-fn prepare_main_block() -> Block<'static> {
-    Block::default()
-        .borders(Borders::ALL)
-        .title(APP_LABEL)
-        .title_alignment(Alignment::Center)
-        .border_type(BorderType::Rounded)
+fn prepare_main_block(frame: &CrosstermFrame) -> Paragraph<'static> {
+    let screen_height = frame.size().height;
+    let number_of_newlines = screen_height / 2 - 7;
+
+    let mut text = vec![];
+
+    for _ in 0..=number_of_newlines {
+        text.push(Spans::from("\n"));
+    }
+
+    text.extend(vec![
+        Spans::from("Hello! Welcome to Pokerust."),
+        Spans::from("\n"),
+        Spans::from("Use \"Up\" and \"Down\" arrows to navigate through Pokemon list."),
+        Spans::from("Press \"Enter\" to see information about needed Pokemon."),
+        Spans::from("Press \"Esc\" to leave information screen."),
+        Spans::from("Press \"q\" to leave Pokedex."),
+    ]);
+
+    Paragraph::new(text)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title_alignment(Alignment::Center)
+                .border_type(BorderType::Rounded),
+        )
+        .alignment(Alignment::Center)
+        .wrap(Wrap { trim: true })
 }
 
 fn prepare_list(items: Vec<ListItem>) -> List {
     List::new(items)
-        .block(Block::default().title("List").borders(Borders::ALL))
+        .block(Block::default().title("Pokemon list").borders(Borders::ALL))
         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
         .highlight_symbol("> ")
 }

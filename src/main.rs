@@ -19,7 +19,6 @@ use crossterm::{
 use tui::{backend::CrosstermBackend, Terminal};
 use ui::render;
 
-const APP_LABEL: &str = "Pokerust Tui - Terminal based PokeDex built in Rust";
 const POKEAPI_DEFAULT_URL: &str = "https://pokeapi.co/api/v2/";
 
 #[tokio::main]
@@ -65,7 +64,7 @@ async fn run_app(
             if let Event::Key(key) = event::read()? {
                 match key.code {
                     KeyCode::Char('q') => return Ok(()),
-                    KeyCode::Left => app.stateful_list.unselect(),
+                    KeyCode::Esc => app.stateful_list.unselect(),
                     KeyCode::Down => app.stateful_list.next(),
                     KeyCode::Up => app.stateful_list.previous(),
                     _ => {}
