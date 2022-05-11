@@ -1,6 +1,9 @@
 mod app;
+mod http;
+mod pokemon_list;
 mod stateful_list;
 mod ui;
+mod utils;
 
 use std::{
     io::{self, Stdout},
@@ -17,8 +20,10 @@ use tui::{backend::CrosstermBackend, Terminal};
 use ui::render;
 
 const APP_LABEL: &str = "Pokerust Tui - Terminal based PokeDex built in Rust";
+const POKEAPI_DEFAULT_URL: &str = "https://pokeapi.co/api/v2/";
 
-fn main() -> Result<(), io::Error> {
+#[tokio::main]
+async fn main() -> Result<(), io::Error> {
     let mut stdout = io::stdout();
 
     enable_raw_mode()?;
@@ -28,7 +33,7 @@ fn main() -> Result<(), io::Error> {
     let mut terminal = Terminal::new(backend)?;
 
     let app = App::new();
-    let res = run_app(app, &mut terminal);
+    let res = run_app(app, &mut terminal).await;
 
     disable_raw_mode()?;
     execute!(
@@ -45,8 +50,13 @@ fn main() -> Result<(), io::Error> {
     Ok(())
 }
 
-fn run_app(mut app: App, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> io::Result<()> {
+async fn run_app(
+    mut app: App,
+    terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+) -> io::Result<()> {
     let tick_rate = Duration::from_millis(250);
+
+    app.fetch_list().await;
 
     loop {
         terminal.draw(|frame| render(frame, &mut app))?;

@@ -8,7 +8,7 @@ use tui::{
     Frame,
 };
 
-use crate::{app::App, APP_LABEL};
+use crate::{app::App, utils::uppercase_first_letter, APP_LABEL};
 
 type CrosstermFrame<'a> = Frame<'a, CrosstermBackend<Stdout>>;
 
@@ -19,7 +19,11 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
         .stateful_list
         .items
         .iter()
-        .map(|(label, ..)| ListItem::new(*label))
+        .map(|pokemon| {
+            let name = pokemon.name.as_ref().unwrap().as_ref();
+
+            ListItem::new(uppercase_first_letter(name))
+        })
         .collect();
 
     frame.render_stateful_widget(
