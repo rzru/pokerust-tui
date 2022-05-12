@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, sync::Arc};
 
 use hyper::{
     body::{to_bytes, Bytes},
@@ -51,60 +51,44 @@ impl Http {
 
         None
     }
+}
 
-    pub async fn fetch_external_single<T, R: 'static>(
-        &'static self,
-        data: T,
-        fetch_url_extractor: fn(&T) -> String,
-    ) -> Option<R>
-    where
-        R: DeserializeOwned + Send + Debug,
-    {
-        let mut result_as_vec: Vec<R> = self
-            .fetch_external::<T, R>(vec![data].as_slice(), fetch_url_extractor)
-            .await;
+pub async fn fetch_external<T, R: 'static, F>(data: &[T], fetch_url_extractor: F) -> Vec<R>
+where
+    R: DeserializeOwned + Send + Debug,
+    F: Fn(&T) -> String,
+{
+    let mut res = vec![];
+    let (tx, mut rx) = mpsc::channel(32);
+    let http = Arc::new(Http::new());
 
-        return result_as_vec.pop();
+    for item in data {
+        let http = Arc::clone(&http);
+        let url = fetch_url_extractor(item);
+        let tx = tx.clone();
+        spawn_fetcher(http, url, tx).await;
     }
 
-    pub async fn fetch_external<T, R: 'static>(
-        &'static self,
-        data: &[T],
-        fetch_url_extractor: fn(&T) -> String,
-    ) -> Vec<R>
-    where
-        R: DeserializeOwned + Send + Debug,
-    {
-        let mut res = vec![];
-        let (tx, mut rx) = mpsc::channel(32);
+    drop(tx);
 
-        for item in data {
-            let url = fetch_url_extractor(item);
-            let tx = tx.clone();
-            self.spawn_fetcher(url, tx).await;
+    while let Some(message) = rx.recv().await {
+        res.push(message)
+    }
+
+    res
+}
+
+async fn spawn_fetcher<T: 'static>(http: Arc<Http>, url: String, tx: Sender<T>)
+where
+    T: DeserializeOwned + Send + Debug,
+{
+    tokio::spawn(async move {
+        let data = http.get(&url).await;
+
+        if let Some(bytes) = data {
+            let fetched = serde_json::from_slice(&bytes).unwrap();
+
+            tx.send(fetched).await.unwrap();
         }
-
-        drop(tx);
-
-        while let Some(message) = rx.recv().await {
-            res.push(message)
-        }
-
-        res
-    }
-
-    async fn spawn_fetcher<T: 'static>(&'static self, url: String, tx: Sender<T>)
-    where
-        T: DeserializeOwned + Send + Debug,
-    {
-        tokio::spawn(async move {
-            let data = self.get(&url).await;
-
-            if let Some(bytes) = data {
-                let fetched = serde_json::from_slice(&bytes).unwrap();
-
-                tx.send(fetched).await.unwrap();
-            }
-        });
-    }
+    });
 }

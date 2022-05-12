@@ -1,7 +1,9 @@
+use tokio::join;
+
 use crate::{
-    http::Http,
-    models::PokemonListWrapper,
-    models::{NamedApiResource, Pokemon},
+    http::{fetch_external, Http},
+    models::{pokemon_move::PokemonMoveExt, NamedApiResource, Pokemon},
+    models::{PokemonAbilityExt, PokemonListWrapper},
     stateful_list::StatefulList,
     POKEAPI_DEFAULT_URL,
 };
@@ -34,8 +36,23 @@ impl App {
 
     pub async fn fetch_pokemon_with_info(&mut self, pokemon: &NamedApiResource) {
         let uri = pokemon.url.as_ref().unwrap().to_string();
+        let pokemon: Option<Pokemon> = self.http.get_as_object(&uri).await;
 
-        self.current_pokemon = self.http.get_as_object(&uri).await;
+        if let Some(pokemon) = pokemon {
+            let fetch_url =
+                |api_resource: &NamedApiResource| api_resource.url.as_ref().unwrap().to_string();
+
+            let (abilities, moves) = (pokemon.abilities.unwrap(), pokemon.moves.unwrap());
+
+            let (abilities, moves): (Vec<PokemonAbilityExt>, Vec<PokemonMoveExt>) = join!(
+                fetch_external(abilities.as_slice(), |ability| {
+                    fetch_url(ability.ability.as_ref().unwrap())
+                }),
+                fetch_external(moves.as_slice(), |mv| {
+                    fetch_url(mv.de_move.as_ref().unwrap())
+                })
+            );
+        }
     }
 
     pub fn reset_current_pokemon(&mut self) {

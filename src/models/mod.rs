@@ -13,7 +13,7 @@ pub mod version_game_index;
 pub use flavor_text_entry::FlavorTextEntry;
 pub use named_api_resource::NamedApiResource;
 pub use pokemon::Pokemon;
-pub use pokemon_ability::PokemonAbility;
+pub use pokemon_ability::{PokemonAbility, PokemonAbilityExt};
 pub use pokemon_held_item::{PokemonHeldItem, PokemonHeldItemVersion};
 pub use pokemon_list::PokemonListWrapper;
 pub use pokemon_move::PokemonMove;
