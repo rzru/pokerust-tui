@@ -10,6 +10,11 @@ use crate::{
 
 pub type TestStatefulList = StatefulList<NamedApiResource>;
 
+pub enum SelectedPart {
+    List,
+    Main,
+}
+
 pub struct ExtendedPokemonInfo {
     pokemon: Pokemon,
     abilities: Vec<PokemonAbilityExt>,
@@ -22,6 +27,7 @@ pub struct App {
     http: Http,
     pub current_pokemon: Option<ExtendedPokemonInfo>,
     pub search: String,
+    pub selected_part: SelectedPart,
 }
 
 impl App {
@@ -31,6 +37,7 @@ impl App {
             http: Http::new(),
             current_pokemon: None,
             search: String::new(),
+            selected_part: SelectedPart::List,
         }
     }
 

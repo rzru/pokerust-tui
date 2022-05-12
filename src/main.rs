@@ -10,7 +10,7 @@ use std::{
     time::Duration,
 };
 
-use app::App;
+use app::{App, SelectedPart};
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
@@ -64,23 +64,51 @@ async fn run_app(
             if let Event::Key(key) = event::read()? {
                 match key.code {
                     KeyCode::Char('q') => return Ok(()),
-                    KeyCode::Esc => app.reset_current_pokemon(),
-                    KeyCode::Down => app.pokemon_list.next(),
-                    KeyCode::Up => app.pokemon_list.previous(),
+                    KeyCode::Esc => {
+                        app.reset_current_pokemon();
+                        app.selected_part = SelectedPart::List;
+                    }
+                    KeyCode::Down => {
+                        if let SelectedPart::List = app.selected_part {
+                            app.pokemon_list.next()
+                        }
+                    }
+                    KeyCode::Up => {
+                        if let SelectedPart::List = app.selected_part {
+                            app.pokemon_list.previous()
+                        }
+                    }
+                    KeyCode::Left => {
+                        if let SelectedPart::Main = app.selected_part {
+                            app.selected_part = SelectedPart::List
+                        }
+                    }
+                    KeyCode::Right => {
+                        if let (SelectedPart::List, Some(_)) =
+                            (&app.selected_part, &app.current_pokemon)
+                        {
+                            app.selected_part = SelectedPart::Main
+                        }
+                    }
                     KeyCode::Enter => {
                         let pokemon = app.pokemon_list.get_selected().cloned();
 
                         if let Some(pokemon) = pokemon {
                             app.fetch_pokemon_with_info(&pokemon).await;
+                            app.selected_part = SelectedPart::Main;
                         }
                     }
                     KeyCode::Char(c) => {
-                        app.search.push(c);
-                        app.filter_list();
+                        if let SelectedPart::List = app.selected_part {
+                            app.search.push(c);
+                            app.filter_list();
+                        }
                     }
                     KeyCode::Backspace => {
-                        app.search.pop();
-                        app.filter_list();
+                        if let SelectedPart::List = app.selected_part {
+                            app.search.pop();
+                            app.filter_list();
+                        }
                     }
                     _ => {}
                 }
