@@ -1,5 +1,6 @@
 mod app;
 mod http;
+mod pokemon;
 mod pokemon_list;
 mod stateful_list;
 mod ui;
@@ -55,7 +56,7 @@ async fn run_app(
 ) -> io::Result<()> {
     let tick_rate = Duration::from_millis(250);
 
-    app.fetch_list().await;
+    app.fetch_pokemon_list().await;
 
     loop {
         terminal.draw(|frame| render(frame, &mut app))?;
@@ -64,9 +65,16 @@ async fn run_app(
             if let Event::Key(key) = event::read()? {
                 match key.code {
                     KeyCode::Char('q') => return Ok(()),
-                    KeyCode::Esc => app.stateful_list.unselect(),
-                    KeyCode::Down => app.stateful_list.next(),
-                    KeyCode::Up => app.stateful_list.previous(),
+                    KeyCode::Esc => app.reset_current_pokemon(),
+                    KeyCode::Down => app.pokemon_list.next(),
+                    KeyCode::Up => app.pokemon_list.previous(),
+                    KeyCode::Enter => {
+                        let pokemon = app.pokemon_list.get_selected().cloned();
+
+                        if let Some(pokemon) = pokemon {
+                            app.fetch_pokemon_with_info(&pokemon).await;
+                        }
+                    }
                     _ => {}
                 }
             }

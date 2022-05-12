@@ -5,7 +5,7 @@ use tui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
     text::Spans,
-    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph, Wrap},
+    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph, Widget, Wrap},
     Frame,
 };
 
@@ -17,7 +17,7 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
     let layout_chunks = prepare_chunks(frame);
 
     let items: Vec<ListItem> = app
-        .stateful_list
+        .pokemon_list
         .items
         .iter()
         .map(|pokemon| {
@@ -31,9 +31,14 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
     frame.render_stateful_widget(
         prepare_list(items),
         layout_chunks[0],
-        &mut app.stateful_list.state,
+        &mut app.pokemon_list.state,
     );
-    frame.render_widget(prepare_main_block(frame), layout_chunks[1]);
+
+    if let Some(pokemon) = &app.current_pokemon {
+        frame.render_widget(layout_block(), layout_chunks[1]);
+    } else {
+        frame.render_widget(prepare_jumbotron(frame), layout_chunks[1]);
+    }
 }
 
 fn prepare_chunks(frame: &CrosstermFrame) -> Vec<Rect> {
@@ -44,7 +49,14 @@ fn prepare_chunks(frame: &CrosstermFrame) -> Vec<Rect> {
         .split(frame.size())
 }
 
-fn prepare_main_block(frame: &CrosstermFrame) -> Paragraph<'static> {
+fn layout_block() -> Block<'static> {
+    Block::default()
+        .borders(Borders::ALL)
+        .title_alignment(Alignment::Center)
+        .border_type(BorderType::Rounded)
+}
+
+fn prepare_jumbotron(frame: &CrosstermFrame) -> Paragraph<'static> {
     let screen_height = frame.size().height;
     let number_of_newlines = screen_height / 2 - 7;
 
@@ -64,19 +76,19 @@ fn prepare_main_block(frame: &CrosstermFrame) -> Paragraph<'static> {
     ]);
 
     Paragraph::new(text)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title_alignment(Alignment::Center)
-                .border_type(BorderType::Rounded),
-        )
+        .block(layout_block())
         .alignment(Alignment::Center)
         .wrap(Wrap { trim: true })
 }
 
 fn prepare_list(items: Vec<ListItem>) -> List {
     List::new(items)
-        .block(Block::default().title("Pokemon list").borders(Borders::ALL))
+        .block(
+            Block::default()
+                .title("Pokemon list")
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded),
+        )
         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
         .highlight_symbol("> ")
 }

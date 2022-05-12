@@ -52,10 +52,25 @@ impl Http {
         None
     }
 
+    pub async fn fetch_external_single<T, R: 'static>(
+        &'static self,
+        data: T,
+        fetch_url_extractor: fn(&T) -> String,
+    ) -> Option<R>
+    where
+        R: DeserializeOwned + Send + Debug,
+    {
+        let mut result_as_vec: Vec<R> = self
+            .fetch_external::<T, R>(vec![data].as_slice(), fetch_url_extractor)
+            .await;
+
+        return result_as_vec.pop();
+    }
+
     pub async fn fetch_external<T, R: 'static>(
         &'static self,
         data: &[T],
-        fetch_url: fn(&T) -> String,
+        fetch_url_extractor: fn(&T) -> String,
     ) -> Vec<R>
     where
         R: DeserializeOwned + Send + Debug,
@@ -64,7 +79,7 @@ impl Http {
         let (tx, mut rx) = mpsc::channel(32);
 
         for item in data {
-            let url = fetch_url(item);
+            let url = fetch_url_extractor(item);
             let tx = tx.clone();
             self.spawn_fetcher(url, tx).await;
         }

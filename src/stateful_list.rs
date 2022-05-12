@@ -7,10 +7,9 @@ pub struct StatefulList<T> {
 
 impl<T> StatefulList<T> {
     pub fn with_items(items: Vec<T>) -> StatefulList<T> {
-        StatefulList {
-            state: ListState::default(),
-            items,
-        }
+        let mut state = ListState::default();
+        state.select(Some(0));
+        StatefulList { state, items }
     }
 
     pub fn next(&mut self) {
@@ -43,5 +42,15 @@ impl<T> StatefulList<T> {
 
     pub fn unselect(&mut self) {
         self.state.select(None);
+    }
+
+    pub fn get_selected(&self) -> Option<&T> {
+        let selected = self.state.selected();
+
+        if let Some(i) = selected {
+            return self.items.get(i);
+        }
+
+        None
     }
 }

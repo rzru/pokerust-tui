@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Pokemon {
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PokemonFromList {
     pub name: Option<String>,
     pub url: Option<String>,
 }
@@ -9,5 +9,5 @@ pub struct Pokemon {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PokemonListWrapper {
     pub count: Option<i32>,
-    pub results: Option<Vec<Pokemon>>,
+    pub results: Option<Vec<PokemonFromList>>,
 }
