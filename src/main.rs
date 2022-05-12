@@ -1,7 +1,6 @@
 mod app;
 mod http;
-mod pokemon;
-mod pokemon_list;
+mod models;
 mod stateful_list;
 mod ui;
 mod utils;

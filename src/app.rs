@@ -1,12 +1,12 @@
 use crate::{
     http::Http,
-    pokemon::Pokemon,
-    pokemon_list::{PokemonFromList, PokemonListWrapper},
+    models::PokemonListWrapper,
+    models::{NamedApiResource, Pokemon},
     stateful_list::StatefulList,
     POKEAPI_DEFAULT_URL,
 };
 
-pub type TestStatefulList = StatefulList<PokemonFromList>;
+pub type TestStatefulList = StatefulList<NamedApiResource>;
 
 pub struct App {
     pub pokemon_list: TestStatefulList,
@@ -32,7 +32,7 @@ impl App {
             .extend(pokemon_list.unwrap().results.unwrap())
     }
 
-    pub async fn fetch_pokemon_with_info(&mut self, pokemon: &PokemonFromList) {
+    pub async fn fetch_pokemon_with_info(&mut self, pokemon: &NamedApiResource) {
         let uri = pokemon.url.as_ref().unwrap().to_string();
 
         self.current_pokemon = self.http.get_as_object(&uri).await;

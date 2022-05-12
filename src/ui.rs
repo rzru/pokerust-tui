@@ -5,7 +5,7 @@ use tui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
     text::Spans,
-    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph, Widget, Wrap},
+    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph, Wrap},
     Frame,
 };
 
