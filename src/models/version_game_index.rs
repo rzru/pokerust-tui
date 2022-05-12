@@ -1,5 +1,6 @@
-use super::NamedApiResource;
 use serde::{Deserialize, Serialize};
+
+use super::NamedApiResource;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct VersionGameIndex {

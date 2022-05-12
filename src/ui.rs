@@ -8,17 +8,18 @@ use tui::{
     widgets::{Block, BorderType, Borders, List, ListItem, Paragraph, Wrap},
     Frame,
 };
+use unicode_width::UnicodeWidthStr;
 
 use crate::{app::App, utils::PreparePokemonNameForDisplay};
 
 type CrosstermFrame<'a> = Frame<'a, CrosstermBackend<Stdout>>;
 
 pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
-    let layout_chunks = prepare_chunks(frame);
+    let (list_area, search_area, main_area) = prepare_chunks(frame);
 
     let items: Vec<ListItem> = app
         .pokemon_list
-        .items
+        .items_to_render
         .iter()
         .map(|pokemon| {
             let name: &str = pokemon.name.as_ref().unwrap().as_ref();
@@ -28,25 +29,42 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
         })
         .collect();
 
-    frame.render_stateful_widget(
-        prepare_list(items),
-        layout_chunks[0],
-        &mut app.pokemon_list.state,
+    frame.render_stateful_widget(prepare_list(items), list_area, &mut app.pokemon_list.state);
+    frame.render_widget(prepare_search(app), search_area);
+    frame.set_cursor(
+        search_area.x + app.search.width() as u16 + 1,
+        search_area.y + 1,
     );
 
     if let Some(pokemon) = &app.current_pokemon {
-        frame.render_widget(layout_block(), layout_chunks[1]);
+        frame.render_widget(layout_block(), main_area);
     } else {
-        frame.render_widget(prepare_jumbotron(frame), layout_chunks[1]);
+        frame.render_widget(prepare_jumbotron(frame), main_area);
     }
 }
 
-fn prepare_chunks(frame: &CrosstermFrame) -> Vec<Rect> {
-    Layout::default()
+fn prepare_search<'a>(app: &'a mut App) -> Paragraph<'a> {
+    Paragraph::new(app.search.as_ref()).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .title("Filter")
+            .border_type(BorderType::Rounded),
+    )
+}
+
+fn prepare_chunks(frame: &CrosstermFrame) -> (Rect, Rect, Rect) {
+    let main_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .margin(1)
         .constraints([Constraint::Percentage(25), Constraint::Percentage(75)].as_ref())
-        .split(frame.size())
+        .split(frame.size());
+
+    let list_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Percentage(95), Constraint::Percentage(5)])
+        .split(main_chunks[0]);
+
+    return (list_chunks[0], list_chunks[1], main_chunks[1]);
 }
 
 fn layout_block() -> Block<'static> {

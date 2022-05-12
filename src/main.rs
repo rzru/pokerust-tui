@@ -74,6 +74,14 @@ async fn run_app(
                             app.fetch_pokemon_with_info(&pokemon).await;
                         }
                     }
+                    KeyCode::Char(c) => {
+                        app.search.push(c);
+                        app.filter_list();
+                    }
+                    KeyCode::Backspace => {
+                        app.search.pop();
+                        app.filter_list();
+                    }
                     _ => {}
                 }
             }
