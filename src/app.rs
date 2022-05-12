@@ -2,7 +2,7 @@ use tokio::join;
 
 use crate::{
     http::{fetch_external, Http},
-    models::{pokemon_move::PokemonMoveExt, NamedApiResource, Pokemon},
+    models::{pokemon_move::PokemonMoveExt, NamedApiResource, Pokemon, PokemonSpecies},
     models::{PokemonAbilityExt, PokemonListWrapper},
     stateful_list::StatefulList,
     POKEAPI_DEFAULT_URL,
@@ -10,10 +10,17 @@ use crate::{
 
 pub type TestStatefulList = StatefulList<NamedApiResource>;
 
+pub struct ExtendedPokemonInfo {
+    pokemon: Pokemon,
+    abilities: Vec<PokemonAbilityExt>,
+    moves: Vec<PokemonMoveExt>,
+    species: PokemonSpecies,
+}
+
 pub struct App {
     pub pokemon_list: TestStatefulList,
     http: Http,
-    pub current_pokemon: Option<Pokemon>,
+    pub current_pokemon: Option<ExtendedPokemonInfo>,
 }
 
 impl App {
@@ -42,16 +49,32 @@ impl App {
             let fetch_url =
                 |api_resource: &NamedApiResource| api_resource.url.as_ref().unwrap().to_string();
 
-            let (abilities, moves) = (pokemon.abilities.unwrap(), pokemon.moves.unwrap());
+            let (abilities, moves) = (
+                pokemon.abilities.as_ref().unwrap(),
+                pokemon.moves.as_ref().unwrap(),
+            );
 
-            let (abilities, moves): (Vec<PokemonAbilityExt>, Vec<PokemonMoveExt>) = join!(
+            let (abilities, moves, species): (
+                Vec<PokemonAbilityExt>,
+                Vec<PokemonMoveExt>,
+                Option<PokemonSpecies>,
+            ) = join!(
                 fetch_external(abilities.as_slice(), |ability| {
                     fetch_url(ability.ability.as_ref().unwrap())
                 }),
                 fetch_external(moves.as_slice(), |mv| {
                     fetch_url(mv.de_move.as_ref().unwrap())
-                })
+                }),
+                self.http
+                    .get_as_object(pokemon.species.as_ref().unwrap().url.as_ref().unwrap()),
             );
+
+            self.current_pokemon = Some(ExtendedPokemonInfo {
+                pokemon,
+                abilities,
+                moves,
+                species: species.unwrap(),
+            })
         }
     }
 
