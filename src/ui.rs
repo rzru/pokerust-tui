@@ -1,11 +1,11 @@
-use std::io::Stdout;
+use std::{io::Stdout, vec};
 
 use tui::{
     backend::CrosstermBackend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Span, Spans},
-    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph, Wrap},
+    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph, Row, Table, Wrap},
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
@@ -49,6 +49,7 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
             .title("Filter")
             .border_type(BorderType::Rounded),
     );
+
     let list = List::new(items)
         .block(
             Block::default()
@@ -73,6 +74,18 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
             moves,
             species,
         } = current_pokemon;
+
+        let main_block_chunks = Layout::default()
+            .constraints(
+                [
+                    Constraint::Percentage(20),
+                    Constraint::Percentage(1),
+                    Constraint::Percentage(20),
+                ]
+                .as_ref(),
+            )
+            .margin(1)
+            .split(main_area);
 
         let text = vec![
             Spans::from(vec![
@@ -130,11 +143,49 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
             ]),
         ];
 
+        let table_rows: Vec<Row> = species
+            .pokedex_numbers
+            .as_ref()
+            .unwrap()
+            .iter()
+            .map(|pokedex_number| {
+                Row::new(vec![
+                    format!("\u{A0}{}", pokedex_number.entry_number.unwrap()),
+                    pokedex_number
+                        .pokedex
+                        .as_ref()
+                        .unwrap()
+                        .name
+                        .as_ref()
+                        .unwrap()
+                        .to_string()
+                        .split_capitalize(),
+                ])
+            })
+            .collect();
+
+        let table = Table::new(table_rows)
+            .header(
+                Row::new(vec!["\u{A0}Order Number", "Region"])
+                    .style(Style::default().fg(Color::Blue)),
+            )
+            .block(Block::default().title(Spans::from(Span::styled(
+                "\u{A0}Pokedex Numbers",
+                Style::default().add_modifier(Modifier::BOLD),
+            ))))
+            .widths(&[Constraint::Percentage(15), Constraint::Percentage(30)])
+            .column_spacing(1);
+
         let paragraph = Paragraph::new(text)
-            .block(main_block)
+            .block(Block::default().title(Spans::from(Span::styled(
+                "\u{A0}Main information",
+                Style::default().add_modifier(Modifier::BOLD),
+            ))))
             .wrap(Wrap { trim: true });
 
-        frame.render_widget(paragraph, main_area);
+        frame.render_widget(main_block, main_area);
+        frame.render_widget(paragraph, main_block_chunks[0]);
+        frame.render_widget(table, main_block_chunks[2]);
     } else {
         let mut text = vec![];
 
