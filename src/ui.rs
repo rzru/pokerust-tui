@@ -4,14 +4,14 @@ use tui::{
     backend::CrosstermBackend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    text::Spans,
+    text::{Span, Spans},
     widgets::{Block, BorderType, Borders, List, ListItem, Paragraph, Wrap},
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    app::{App, SelectedPart},
+    app::{App, ExtendedPokemonInfo, SelectedPart},
     utils::PreparePokemonNameForDisplay,
 };
 
@@ -66,8 +66,75 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
         .border_type(BorderType::Rounded)
         .border_style(main_style);
 
-    if let Some(pokemon) = &app.current_pokemon {
-        frame.render_widget(main_block, main_area);
+    if let Some(current_pokemon) = &app.current_pokemon {
+        let ExtendedPokemonInfo {
+            pokemon,
+            abilities,
+            moves,
+            species,
+        } = current_pokemon;
+
+        let text = vec![
+            Spans::from(vec![
+                Span::styled("\u{A0}ID: ", Style::default().fg(Color::Blue)),
+                Span::raw(pokemon.id.as_ref().unwrap().to_string()),
+            ]),
+            Spans::from(vec![
+                Span::styled("\u{A0}Order: ", Style::default().fg(Color::Blue)),
+                Span::raw(pokemon.order.as_ref().unwrap().to_string()),
+            ]),
+            Spans::from(vec![
+                Span::styled("\u{A0}Name: ", Style::default().fg(Color::Blue)),
+                Span::raw(
+                    pokemon
+                        .name
+                        .as_ref()
+                        .unwrap()
+                        .to_string()
+                        .split_capitalize(),
+                ),
+            ]),
+            Spans::from(vec![
+                Span::styled("\u{A0}Height: ", Style::default().fg(Color::Blue)),
+                Span::raw(pokemon.height.as_ref().unwrap().to_string()),
+            ]),
+            Spans::from(vec![
+                Span::styled("\u{A0}Weight: ", Style::default().fg(Color::Blue)),
+                Span::raw(pokemon.weight.as_ref().unwrap().to_string()),
+            ]),
+            Spans::from(vec![
+                Span::styled("\u{A0}Base Experience: ", Style::default().fg(Color::Blue)),
+                Span::raw(pokemon.base_experience.as_ref().unwrap().to_string()),
+            ]),
+            Spans::from(vec![
+                Span::styled("\u{A0}Base Happiness: ", Style::default().fg(Color::Blue)),
+                Span::raw(species.base_happiness.as_ref().unwrap().to_string()),
+            ]),
+            Spans::from(vec![
+                Span::styled("\u{A0}Capture Rate: ", Style::default().fg(Color::Blue)),
+                Span::raw(species.capture_rate.as_ref().unwrap().to_string()),
+            ]),
+            Spans::from(vec![
+                Span::styled("\u{A0}Color: ", Style::default().fg(Color::Blue)),
+                Span::raw(
+                    species
+                        .color
+                        .as_ref()
+                        .unwrap()
+                        .name
+                        .as_ref()
+                        .unwrap()
+                        .to_string()
+                        .split_capitalize(),
+                ),
+            ]),
+        ];
+
+        let paragraph = Paragraph::new(text)
+            .block(main_block)
+            .wrap(Wrap { trim: true });
+
+        frame.render_widget(paragraph, main_area);
     } else {
         let mut text = vec![];
 
@@ -79,7 +146,10 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
             Spans::from("Press \"Esc\" to leave information screen."),
             Spans::from("Press \"q\" to leave Pokedex."),
         ];
-        let loading_text = vec![Spans::from("Loading...")];
+        let loading_text = vec![Spans::from(Span::styled(
+            "Loading...",
+            Style::default().add_modifier(Modifier::BOLD),
+        ))];
 
         let current_text = if app.loading {
             loading_text

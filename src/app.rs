@@ -16,10 +16,10 @@ pub enum SelectedPart {
 }
 
 pub struct ExtendedPokemonInfo {
-    pokemon: Pokemon,
-    abilities: Vec<PokemonAbilityExt>,
-    moves: Vec<PokemonMoveExt>,
-    species: PokemonSpecies,
+    pub pokemon: Pokemon,
+    pub abilities: Vec<PokemonAbilityExt>,
+    pub moves: Vec<PokemonMoveExt>,
+    pub species: PokemonSpecies,
 }
 
 pub struct App {

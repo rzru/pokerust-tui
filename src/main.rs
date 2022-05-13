@@ -98,7 +98,6 @@ async fn run_app(
                             app.loading = true;
                             terminal.draw(|frame| render(frame, &mut app))?;
                             app.fetch_pokemon_with_info(&pokemon).await;
-                            app.selected_part = SelectedPart::Main;
                             app.loading = false;
                         }
                     }
