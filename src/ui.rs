@@ -20,7 +20,7 @@ type CrosstermFrame<'a> = Frame<'a, CrosstermBackend<Stdout>>;
 pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
     let (list_area, search_area, main_area) = prepare_chunks(frame);
 
-    let items: Vec<ListItem> = app
+    let pokemon_items_to_render: Vec<ListItem> = app
         .pokemon_list
         .items_to_render
         .iter()
@@ -50,7 +50,7 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
             .border_type(BorderType::Rounded),
     );
 
-    let list = List::new(items)
+    let list = List::new(pokemon_items_to_render)
         .block(
             Block::default()
                 .title("Pokemon list")
@@ -87,84 +87,52 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
             .margin(1)
             .split(main_area);
 
-        let text = vec![
+        let main_information_text = vec![
             Spans::from(vec![
-                Span::styled("\u{A0}ID: ", Style::default().fg(Color::Blue)),
-                Span::raw(pokemon.id.as_ref().unwrap().to_string()),
+                get_renderable_title("ID"),
+                pokemon.get_renderable_id(),
             ]),
             Spans::from(vec![
-                Span::styled("\u{A0}Order: ", Style::default().fg(Color::Blue)),
-                Span::raw(pokemon.order.as_ref().unwrap().to_string()),
+                get_renderable_title("Order"),
+                pokemon.get_renderable_order(),
             ]),
             Spans::from(vec![
-                Span::styled("\u{A0}Name: ", Style::default().fg(Color::Blue)),
-                Span::raw(
-                    pokemon
-                        .name
-                        .as_ref()
-                        .unwrap()
-                        .to_string()
-                        .split_capitalize(),
-                ),
+                get_renderable_title("Name"),
+                pokemon.get_renderable_name(),
+            ]),
+            Spans::from({
+                let mut spans = vec![get_renderable_title("Types")];
+                spans.extend(pokemon.get_renderable_types());
+
+                spans
+            }),
+            Spans::from(vec![
+                get_renderable_title("Height"),
+                pokemon.get_renderable_height(),
             ]),
             Spans::from(vec![
-                Span::styled("\u{A0}Height: ", Style::default().fg(Color::Blue)),
-                Span::raw(pokemon.height.as_ref().unwrap().to_string()),
+                get_renderable_title("Weight"),
+                pokemon.get_renderable_weight(),
             ]),
             Spans::from(vec![
-                Span::styled("\u{A0}Weight: ", Style::default().fg(Color::Blue)),
-                Span::raw(pokemon.weight.as_ref().unwrap().to_string()),
+                get_renderable_title("Base Experience"),
+                pokemon.get_renderable_base_experience(),
             ]),
             Spans::from(vec![
-                Span::styled("\u{A0}Base Experience: ", Style::default().fg(Color::Blue)),
-                Span::raw(pokemon.base_experience.as_ref().unwrap().to_string()),
+                get_renderable_title("Base Happiness"),
+                species.get_renderable_base_happiness(),
             ]),
             Spans::from(vec![
-                Span::styled("\u{A0}Base Happiness: ", Style::default().fg(Color::Blue)),
-                Span::raw(species.base_happiness.as_ref().unwrap().to_string()),
+                get_renderable_title("Capture Rate"),
+                species.get_renderable_capture_rate(),
             ]),
             Spans::from(vec![
-                Span::styled("\u{A0}Capture Rate: ", Style::default().fg(Color::Blue)),
-                Span::raw(species.capture_rate.as_ref().unwrap().to_string()),
-            ]),
-            Spans::from(vec![
-                Span::styled("\u{A0}Color: ", Style::default().fg(Color::Blue)),
-                Span::raw(
-                    species
-                        .color
-                        .as_ref()
-                        .unwrap()
-                        .name
-                        .as_ref()
-                        .unwrap()
-                        .to_string()
-                        .split_capitalize(),
-                ),
+                get_renderable_title("Color"),
+                species.get_renderable_color(),
             ]),
         ];
 
-        let table_rows: Vec<Row> = species
-            .pokedex_numbers
-            .as_ref()
-            .unwrap()
-            .iter()
-            .map(|pokedex_number| {
-                Row::new(vec![
-                    format!("\u{A0}{}", pokedex_number.entry_number.unwrap()),
-                    pokedex_number
-                        .pokedex
-                        .as_ref()
-                        .unwrap()
-                        .name
-                        .as_ref()
-                        .unwrap()
-                        .to_string()
-                        .split_capitalize(),
-                ])
-            })
-            .collect();
-
-        let table = Table::new(table_rows)
+        let pokedex_numbers_table = Table::new(species.get_renderable_pokedex_numbers())
             .header(
                 Row::new(vec!["\u{A0}Order Number", "Region"])
                     .style(Style::default().fg(Color::Blue)),
@@ -176,7 +144,7 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
             .widths(&[Constraint::Percentage(15), Constraint::Percentage(30)])
             .column_spacing(1);
 
-        let paragraph = Paragraph::new(text)
+        let main_information_paragraph = Paragraph::new(main_information_text)
             .block(Block::default().title(Spans::from(Span::styled(
                 "\u{A0}Main information",
                 Style::default().add_modifier(Modifier::BOLD),
@@ -184,8 +152,8 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
             .wrap(Wrap { trim: true });
 
         frame.render_widget(main_block, main_area);
-        frame.render_widget(paragraph, main_block_chunks[0]);
-        frame.render_widget(table, main_block_chunks[2]);
+        frame.render_widget(main_information_paragraph, main_block_chunks[0]);
+        frame.render_widget(pokedex_numbers_table, main_block_chunks[2]);
     } else {
         let mut text = vec![];
 
@@ -247,4 +215,11 @@ fn prepare_chunks(frame: &CrosstermFrame) -> (Rect, Rect, Rect) {
         .split(main_chunks[0]);
 
     return (list_chunks[0], list_chunks[1], main_chunks[1]);
+}
+
+pub fn get_renderable_title(title: &str) -> Span {
+    Span::styled(
+        format!("\u{A0}{}: ", title),
+        Style::default().fg(Color::Blue),
+    )
 }
