@@ -28,6 +28,7 @@ pub struct App {
     pub current_pokemon: Option<ExtendedPokemonInfo>,
     pub search: String,
     pub selected_part: SelectedPart,
+    pub loading: bool,
 }
 
 impl App {
@@ -38,6 +39,7 @@ impl App {
             current_pokemon: None,
             search: String::new(),
             selected_part: SelectedPart::List,
+            loading: false,
         }
     }
 
@@ -83,7 +85,7 @@ impl App {
                 abilities,
                 moves,
                 species: species.unwrap(),
-            })
+            });
         }
     }
 

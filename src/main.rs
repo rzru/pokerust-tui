@@ -94,8 +94,12 @@ async fn run_app(
                         let pokemon = app.pokemon_list.get_selected().cloned();
 
                         if let Some(pokemon) = pokemon {
+                            app.reset_current_pokemon();
+                            app.loading = true;
+                            terminal.draw(|frame| render(frame, &mut app))?;
                             app.fetch_pokemon_with_info(&pokemon).await;
                             app.selected_part = SelectedPart::Main;
+                            app.loading = false;
                         }
                     }
                     KeyCode::Char(c) => {
