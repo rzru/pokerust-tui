@@ -121,15 +121,11 @@ mod tests {
             pokemon_held_item.get_renderable_as_rows(),
             vec![
                 Row::new(vec![
-                    Span::styled("Sharp fang", Style::default().fg(Color::Blue)),
+                    Span::styled("\u{A0}Sharp fang", Style::default().fg(Color::Blue)),
                     Span::raw("20"),
                     Span::raw("X Y"),
                 ]),
-                Row::new(vec![
-                    Span::styled("Sharp fang", Style::default().fg(Color::Blue)),
-                    Span::raw("20"),
-                    Span::raw("X Y"),
-                ]),
+                Row::new(vec![Span::raw(""), Span::raw("20"), Span::raw("X Y"),]),
             ]
         );
     }
