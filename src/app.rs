@@ -65,25 +65,25 @@ impl App {
                 pokemon.moves.as_ref().unwrap(),
             );
 
-            let (abilities, moves, species): (
-                Vec<PokemonAbilityExt>,
-                Vec<PokemonMoveExt>,
+            let (species,): (
+                // Vec<PokemonAbilityExt>,
+                // Vec<PokemonMoveExt>,
                 Option<PokemonSpecies>,
             ) = join!(
-                fetch_external(abilities.as_slice(), |ability| {
-                    fetch_url(ability.ability.as_ref().unwrap())
-                }),
-                fetch_external(moves.as_slice(), |mv| {
-                    fetch_url(mv.de_move.as_ref().unwrap())
-                }),
+                // fetch_external(abilities.as_slice(), |ability| {
+                //     fetch_url(ability.ability.as_ref().unwrap())
+                // }),
+                // fetch_external(moves.as_slice(), |mv| {
+                //     fetch_url(mv.de_move.as_ref().unwrap())
+                // }),
                 self.http
                     .get_as_object(pokemon.species.as_ref().unwrap().url.as_ref().unwrap()),
             );
 
             self.current_pokemon = Some(ExtendedPokemonInfo {
                 pokemon,
-                abilities,
-                moves,
+                abilities: vec![],
+                moves: vec![],
                 species: species.unwrap(),
             });
         }

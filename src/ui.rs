@@ -75,7 +75,7 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
         let main_block_chunks = Layout::default()
             .constraints(
                 [
-                    Constraint::Percentage(24),
+                    Constraint::Percentage(25),
                     Constraint::Percentage(16),
                     Constraint::Percentage(20),
                 ]
@@ -126,6 +126,10 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
             Spans::from(vec![
                 get_renderable_title("Color"),
                 species.get_renderable_color(),
+            ]),
+            Spans::from(vec![
+                get_renderable_title("Is Legendary"),
+                species.get_renderable_is_legendary(),
             ]),
         ];
 

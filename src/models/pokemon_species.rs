@@ -18,6 +18,12 @@ pub struct PokemonSpecies {
 }
 
 impl PokemonSpecies {
+    pub fn get_renderable_is_legendary(&self) -> Span {
+        self.is_legendary
+            .and_then(|is_legendary| Some(Span::raw(if is_legendary { "Yes" } else { "No" })))
+            .unwrap_or(Span::raw(""))
+    }
+
     pub fn get_renderable_base_happiness(&self) -> Span {
         self.base_happiness
             .and_then(|base_happiness| Some(Span::raw(base_happiness.to_string())))
@@ -112,6 +118,12 @@ mod tests {
             flavor_text_entries: None,
             pokedex_numbers: Some(vec![get_stub_pokedex_number()]),
         };
+    }
+
+    #[test]
+    fn pokemon_species_get_renderable_is_legendary() {
+        let species = get_stub_species();
+        assert_eq!(species.get_renderable_is_legendary(), Span::raw("No"));
     }
 
     #[test]
