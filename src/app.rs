@@ -1,4 +1,5 @@
 use tokio::join;
+use tui::widgets::Row;
 
 use crate::{
     http::{fetch_external, Http},
@@ -20,6 +21,29 @@ pub struct ExtendedPokemonInfo {
     pub abilities: Vec<PokemonAbilityExt>,
     pub moves: Vec<PokemonMoveExt>,
     pub species: PokemonSpecies,
+}
+
+impl ExtendedPokemonInfo {
+    pub fn get_renderable_abilities(&self) -> Vec<Row> {
+        self.pokemon
+            .abilities
+            .as_ref()
+            .unwrap()
+            .iter()
+            .filter_map(|ability| {
+                let extended_ability = self.abilities.iter().find(|extended_ability| {
+                    if let Some(item_ability) = ability.ability.as_ref() {
+                        return extended_ability.name.as_ref().unwrap_or(&"".to_string())
+                            == item_ability.name.as_ref().unwrap_or(&"".to_string());
+                    }
+
+                    false
+                });
+
+                ability.get_renderable_as_row(extended_ability)
+            })
+            .collect()
+    }
 }
 
 pub struct App {
@@ -65,25 +89,25 @@ impl App {
                 pokemon.moves.as_ref().unwrap(),
             );
 
-            let (species,): (
-                // Vec<PokemonAbilityExt>,
-                // Vec<PokemonMoveExt>,
+            let (abilities, moves, species): (
+                Vec<PokemonAbilityExt>,
+                Vec<PokemonMoveExt>,
                 Option<PokemonSpecies>,
             ) = join!(
-                // fetch_external(abilities.as_slice(), |ability| {
-                //     fetch_url(ability.ability.as_ref().unwrap())
-                // }),
-                // fetch_external(moves.as_slice(), |mv| {
-                //     fetch_url(mv.de_move.as_ref().unwrap())
-                // }),
+                fetch_external(abilities.as_slice(), |ability| {
+                    fetch_url(ability.ability.as_ref().unwrap())
+                }),
+                fetch_external(moves.as_slice(), |mv| {
+                    fetch_url(mv.de_move.as_ref().unwrap())
+                }),
                 self.http
                     .get_as_object(pokemon.species.as_ref().unwrap().url.as_ref().unwrap()),
             );
 
             self.current_pokemon = Some(ExtendedPokemonInfo {
                 pokemon,
-                abilities: vec![],
-                moves: vec![],
+                abilities,
+                moves,
                 species: species.unwrap(),
             });
         }

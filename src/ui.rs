@@ -73,16 +73,21 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
         } = current_pokemon;
 
         let main_block_chunks = Layout::default()
+            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+            .margin(1)
+            .direction(Direction::Horizontal)
+            .split(main_area);
+
+        let left_block_chunks = Layout::default()
             .constraints(
                 [
                     Constraint::Percentage(25),
-                    Constraint::Percentage(16),
-                    Constraint::Percentage(20),
+                    Constraint::Percentage(17),
+                    Constraint::Percentage(25),
                 ]
                 .as_ref(),
             )
-            .margin(1)
-            .split(main_area);
+            .split(main_block_chunks[0]);
 
         let main_information_text = vec![
             Spans::from(vec![
@@ -133,6 +138,22 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
             ]),
         ];
 
+        let pokemon_held_items_table = Table::new(pokemon.get_renderable_held_items())
+            .header(
+                Row::new(vec!["\u{A0}Name", "Rarity", "Game Version"])
+                    .style(Style::default().fg(Color::Blue)),
+            )
+            .block(Block::default().title(Spans::from(Span::styled(
+                "\u{A0}Held items",
+                Style::default().add_modifier(Modifier::BOLD),
+            ))))
+            .widths(&[
+                Constraint::Percentage(33),
+                Constraint::Percentage(33),
+                Constraint::Percentage(33),
+            ])
+            .column_spacing(1);
+
         let pokemon_stats_table = Table::new(pokemon.get_renderable_stats())
             .header(
                 Row::new(vec!["\u{A0}Name", "Base Stat"]).style(Style::default().fg(Color::Blue)),
@@ -141,7 +162,7 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
                 "\u{A0}Base Stats",
                 Style::default().add_modifier(Modifier::BOLD),
             ))))
-            .widths(&[Constraint::Percentage(15), Constraint::Percentage(30)])
+            .widths(&[Constraint::Percentage(40), Constraint::Percentage(60)])
             .column_spacing(1);
 
         let pokedex_numbers_table = Table::new(species.get_renderable_pokedex_numbers())
@@ -153,7 +174,7 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
                 "\u{A0}Pokedex Numbers",
                 Style::default().add_modifier(Modifier::BOLD),
             ))))
-            .widths(&[Constraint::Percentage(15), Constraint::Percentage(30)])
+            .widths(&[Constraint::Percentage(40), Constraint::Percentage(60)])
             .column_spacing(1);
 
         let main_information_paragraph = Paragraph::new(main_information_text)
@@ -164,9 +185,10 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
             .wrap(Wrap { trim: true });
 
         frame.render_widget(main_block, main_area);
-        frame.render_widget(main_information_paragraph, main_block_chunks[0]);
-        frame.render_widget(pokemon_stats_table, main_block_chunks[1]);
-        frame.render_widget(pokedex_numbers_table, main_block_chunks[2]);
+        frame.render_widget(main_information_paragraph, left_block_chunks[0]);
+        frame.render_widget(pokemon_stats_table, left_block_chunks[1]);
+        frame.render_widget(pokedex_numbers_table, left_block_chunks[2]);
+        frame.render_widget(pokemon_held_items_table, main_block_chunks[1]);
     } else {
         let mut text = vec![];
 
