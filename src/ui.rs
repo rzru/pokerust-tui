@@ -69,10 +69,7 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
 
     if let Some(current_pokemon) = &app.current_pokemon {
         let ExtendedPokemonInfo {
-            pokemon,
-            abilities,
-            moves,
-            species,
+            pokemon, species, ..
         } = current_pokemon;
 
         let main_block_chunks = Layout::default()

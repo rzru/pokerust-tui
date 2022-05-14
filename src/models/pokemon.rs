@@ -31,35 +31,146 @@ pub struct Pokemon {
 
 impl Pokemon {
     pub fn get_renderable_id(&self) -> Span {
-        Span::raw(self.id.as_ref().unwrap().to_string())
+        self.id
+            .as_ref()
+            .and_then(|id| Some(Span::raw(id.to_string())))
+            .unwrap_or(Span::raw(""))
     }
 
     pub fn get_renderable_order(&self) -> Span {
-        Span::raw(self.order.as_ref().unwrap().to_string())
+        self.order
+            .as_ref()
+            .and_then(|order| Some(Span::raw(order.to_string())))
+            .unwrap_or(Span::raw(""))
     }
 
     pub fn get_renderable_name(&self) -> Span {
-        Span::raw(self.name.as_ref().unwrap().to_string().split_capitalize())
+        self.name
+            .as_ref()
+            .and_then(|name| Some(Span::raw(name.to_string().split_capitalize())))
+            .unwrap_or(Span::raw(""))
     }
 
     pub fn get_renderable_height(&self) -> Span {
-        Span::raw(self.height.as_ref().unwrap().to_string())
+        self.height
+            .as_ref()
+            .and_then(|height| Some(Span::raw(height.to_string())))
+            .unwrap_or(Span::raw(""))
     }
 
     pub fn get_renderable_weight(&self) -> Span {
-        Span::raw(self.weight.as_ref().unwrap().to_string())
+        self.weight
+            .as_ref()
+            .and_then(|weight| Some(Span::raw(weight.to_string())))
+            .unwrap_or(Span::raw(""))
     }
 
     pub fn get_renderable_base_experience(&self) -> Span {
-        Span::raw(self.base_experience.as_ref().unwrap().to_string())
+        self.base_experience
+            .as_ref()
+            .and_then(|base_experience| Some(Span::raw(base_experience.to_string())))
+            .unwrap_or(Span::raw(""))
     }
 
     pub fn get_renderable_types(&self) -> Vec<Span> {
         self.types
             .as_ref()
-            .unwrap()
-            .iter()
-            .map(|pokemon_type| pokemon_type.get_renderable())
-            .collect()
+            .and_then(|types| {
+                Some(
+                    types
+                        .iter()
+                        .map(|pokemon_type| pokemon_type.get_renderable())
+                        .collect(),
+                )
+            })
+            .unwrap_or(vec![])
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tui::{
+        style::{Color, Style},
+        text::Span,
+    };
+
+    use crate::models::{NamedApiResource, PokemonType};
+
+    use super::Pokemon;
+
+    fn get_stub_pokemon() -> Pokemon {
+        Pokemon {
+            id: Some(1),
+            name: Some(String::from("raichu")),
+            base_experience: Some(200),
+            height: Some(10),
+            is_default: None,
+            order: Some(1),
+            weight: Some(100),
+            abilities: None,
+            forms: None,
+            game_indices: None,
+            held_items: None,
+            location_area_encounters: None,
+            moves: None,
+            sprites: None,
+            species: None,
+            stats: None,
+            types: Some(vec![PokemonType {
+                slot: None,
+                de_type: Some(NamedApiResource {
+                    name: Some(String::from("electric")),
+                    url: None,
+                }),
+            }]),
+        }
+    }
+
+    #[test]
+    fn pokemon_get_renderable_id() {
+        let pokemon = get_stub_pokemon();
+        assert_eq!(pokemon.get_renderable_id(), Span::raw("1"))
+    }
+
+    #[test]
+    fn pokemon_get_renderable_order() {
+        let pokemon = get_stub_pokemon();
+        assert_eq!(pokemon.get_renderable_order(), Span::raw("1"))
+    }
+
+    #[test]
+    fn pokemon_get_renderable_name() {
+        let pokemon = get_stub_pokemon();
+        assert_eq!(pokemon.get_renderable_name(), Span::raw("Raichu"))
+    }
+
+    #[test]
+    fn pokemon_get_renderable_height() {
+        let pokemon = get_stub_pokemon();
+        assert_eq!(pokemon.get_renderable_height(), Span::raw("10"))
+    }
+
+    #[test]
+    fn pokemon_get_renderable_weight() {
+        let pokemon = get_stub_pokemon();
+        assert_eq!(pokemon.get_renderable_weight(), Span::raw("100"))
+    }
+
+    #[test]
+    fn pokemon_get_renderable_base_experience() {
+        let pokemon = get_stub_pokemon();
+        assert_eq!(pokemon.get_renderable_base_experience(), Span::raw("200"))
+    }
+
+    #[test]
+    fn pokemon_get_renderable_types() {
+        let pokemon = get_stub_pokemon();
+        assert_eq!(
+            pokemon.get_renderable_types(),
+            vec![Span::styled(
+                "Electric ",
+                Style::default().fg(Color::Rgb(255, 204, 51)),
+            )]
+        )
     }
 }

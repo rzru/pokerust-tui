@@ -19,38 +19,42 @@ pub struct PokemonSpecies {
 
 impl PokemonSpecies {
     pub fn get_renderable_base_happiness(&self) -> Span {
-        Span::raw(self.base_happiness.as_ref().unwrap().to_string())
+        self.base_happiness
+            .and_then(|base_happiness| Some(Span::raw(base_happiness.to_string())))
+            .unwrap_or(Span::raw(""))
     }
 
     pub fn get_renderable_capture_rate(&self) -> Span {
-        Span::raw(self.capture_rate.as_ref().unwrap().to_string())
+        self.capture_rate
+            .and_then(|capture_rate| Some(Span::raw(capture_rate.to_string())))
+            .unwrap_or(Span::raw(""))
     }
 
     pub fn get_renderable_color(&self) -> Span {
-        Span::raw(
-            self.color
-                .as_ref()
-                .unwrap()
-                .name
-                .as_ref()
-                .unwrap()
-                .to_string()
-                .split_capitalize(),
-        )
+        self.color
+            .as_ref()
+            .and_then(|color| color.name.as_ref())
+            .and_then(|color| Some(Span::raw(color.to_string().split_capitalize())))
+            .unwrap_or(Span::raw(""))
     }
 
     pub fn get_renderable_pokedex_numbers(&self) -> Vec<Row> {
         self.pokedex_numbers
             .as_ref()
-            .unwrap()
-            .iter()
-            .map(|pokedex_number| {
-                Row::new(vec![
-                    format!("\u{A0}{}", pokedex_number.get_renderable_entry_number()),
-                    pokedex_number.get_renderable_pokedex_name(),
-                ])
+            .and_then(|pokedex_numbers| {
+                Some(
+                    pokedex_numbers
+                        .iter()
+                        .map(|pokedex_number| {
+                            Row::new(vec![
+                                format!("\u{A0}{}", pokedex_number.get_renderable_entry_number()),
+                                pokedex_number.get_renderable_pokedex_name(),
+                            ])
+                        })
+                        .collect(),
+                )
             })
-            .collect()
+            .unwrap_or(vec![])
     }
 }
 
@@ -62,17 +66,99 @@ pub struct PokedexNumber {
 
 impl PokedexNumber {
     fn get_renderable_entry_number(&self) -> String {
-        self.entry_number.unwrap().to_string()
+        self.entry_number
+            .and_then(|entry_number| Some(entry_number.to_string()))
+            .unwrap_or(String::new())
     }
 
     fn get_renderable_pokedex_name(&self) -> String {
         self.pokedex
             .as_ref()
-            .unwrap()
-            .name
-            .as_ref()
-            .unwrap()
-            .to_string()
-            .split_capitalize()
+            .and_then(|pokedex| pokedex.name.as_ref())
+            .and_then(|pokedex| Some(pokedex.to_string().split_capitalize()))
+            .unwrap_or(String::new())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tui::{text::Span, widgets::Row};
+
+    use crate::models::NamedApiResource;
+
+    use super::{PokedexNumber, PokemonSpecies};
+
+    fn get_stub_pokedex_number() -> PokedexNumber {
+        PokedexNumber {
+            entry_number: Some(1),
+            pokedex: Some(NamedApiResource {
+                name: Some(String::from("kanto")),
+                url: None,
+            }),
+        }
+    }
+
+    fn get_stub_species() -> PokemonSpecies {
+        return PokemonSpecies {
+            gender_rate: Some(4),
+            capture_rate: Some(100),
+            color: Some(NamedApiResource {
+                name: Some(String::from("brown")),
+                url: None,
+            }),
+            base_happiness: Some(50),
+            is_legendary: Some(false),
+            evolution_chain: None,
+            flavor_text_entries: None,
+            pokedex_numbers: Some(vec![get_stub_pokedex_number()]),
+        };
+    }
+
+    #[test]
+    fn pokemon_species_get_renderable_base_happiness() {
+        let species = get_stub_species();
+        assert_eq!(species.get_renderable_base_happiness(), Span::raw("50"));
+    }
+
+    #[test]
+    fn pokemon_species_get_renderable_capture_rate() {
+        let species = get_stub_species();
+        assert_eq!(species.get_renderable_capture_rate(), Span::raw("100"));
+    }
+
+    #[test]
+    fn pokemon_species_get_renderable_color() {
+        let species = get_stub_species();
+        assert_eq!(species.get_renderable_color(), Span::raw("Brown"));
+    }
+
+    #[test]
+    fn pokemon_species_get_renderable_pokedex_numbers() {
+        let species = get_stub_species();
+        assert_eq!(
+            species.get_renderable_pokedex_numbers(),
+            vec![Row::new(vec![
+                String::from("\u{A0}1"),
+                String::from("Kanto")
+            ])]
+        );
+    }
+
+    #[test]
+    fn pokedex_number_get_renderable_entry_number() {
+        let pokedex_number = get_stub_pokedex_number();
+        assert_eq!(
+            pokedex_number.get_renderable_entry_number(),
+            String::from("1")
+        );
+    }
+
+    #[test]
+    fn pokedex_number_get_renderable_pokedex_name() {
+        let pokedex_number = get_stub_pokedex_number();
+        assert_eq!(
+            pokedex_number.get_renderable_pokedex_name(),
+            String::from("Kanto")
+        );
     }
 }
