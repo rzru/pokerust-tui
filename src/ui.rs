@@ -75,8 +75,8 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
         let main_block_chunks = Layout::default()
             .constraints(
                 [
-                    Constraint::Percentage(20),
-                    Constraint::Percentage(1),
+                    Constraint::Percentage(24),
+                    Constraint::Percentage(16),
                     Constraint::Percentage(20),
                 ]
                 .as_ref(),
@@ -129,6 +129,17 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
             ]),
         ];
 
+        let pokemon_stats_table = Table::new(pokemon.get_renderable_stats())
+            .header(
+                Row::new(vec!["\u{A0}Name", "Base Stat"]).style(Style::default().fg(Color::Blue)),
+            )
+            .block(Block::default().title(Spans::from(Span::styled(
+                "\u{A0}Base Stats",
+                Style::default().add_modifier(Modifier::BOLD),
+            ))))
+            .widths(&[Constraint::Percentage(15), Constraint::Percentage(30)])
+            .column_spacing(1);
+
         let pokedex_numbers_table = Table::new(species.get_renderable_pokedex_numbers())
             .header(
                 Row::new(vec!["\u{A0}Order Number", "Region"])
@@ -150,6 +161,7 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
 
         frame.render_widget(main_block, main_area);
         frame.render_widget(main_information_paragraph, main_block_chunks[0]);
+        frame.render_widget(pokemon_stats_table, main_block_chunks[1]);
         frame.render_widget(pokedex_numbers_table, main_block_chunks[2]);
     } else {
         let mut text = vec![];

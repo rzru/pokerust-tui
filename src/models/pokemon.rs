@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use tui::text::Span;
+use tui::{text::Span, widgets::Row};
 
 use crate::utils::PreparePokemonNameForDisplay;
 
@@ -85,6 +85,20 @@ impl Pokemon {
             })
             .unwrap_or(vec![])
     }
+
+    pub fn get_renderable_stats(&self) -> Vec<Row> {
+        self.stats
+            .as_ref()
+            .and_then(|stats| {
+                Some(
+                    stats
+                        .iter()
+                        .map(|stat| stat.get_renderable_as_row())
+                        .collect(),
+                )
+            })
+            .unwrap_or(vec![])
+    }
 }
 
 #[cfg(test)]
@@ -92,9 +106,10 @@ mod tests {
     use tui::{
         style::{Color, Style},
         text::Span,
+        widgets::Row,
     };
 
-    use crate::models::{NamedApiResource, PokemonType};
+    use crate::models::{NamedApiResource, PokemonStat, PokemonType};
 
     use super::Pokemon;
 
@@ -115,7 +130,14 @@ mod tests {
             moves: None,
             sprites: None,
             species: None,
-            stats: None,
+            stats: Some(vec![PokemonStat {
+                effort: Some(0),
+                base_stat: Some(15),
+                stat: Some(NamedApiResource {
+                    name: Some(String::from("speed")),
+                    url: None,
+                }),
+            }]),
             types: Some(vec![PokemonType {
                 slot: None,
                 de_type: Some(NamedApiResource {
@@ -171,6 +193,18 @@ mod tests {
                 "Electric ",
                 Style::default().fg(Color::Rgb(255, 204, 51)),
             )]
+        )
+    }
+
+    #[test]
+    fn pokemon_get_renderable_stats() {
+        let pokemon = get_stub_pokemon();
+        assert_eq!(
+            pokemon.get_renderable_stats(),
+            vec![Row::new(vec![
+                Span::styled("\u{A0}Speed: ", Style::default().fg(Color::Blue)),
+                Span::raw("15"),
+            ])]
         )
     }
 }
