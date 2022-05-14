@@ -4,8 +4,8 @@ use tui::{text::Span, widgets::Row};
 use crate::utils::PreparePokemonNameForDisplay;
 
 use super::{
-    NamedApiResource, PokemonAbility, PokemonAbilityExt, PokemonHeldItem, PokemonMove,
-    PokemonSprites, PokemonStat, PokemonType, VersionGameIndex,
+    NamedApiResource, PokemonAbility, PokemonHeldItem, PokemonMove, PokemonSprites, PokemonStat,
+    PokemonType, VersionGameIndex,
 };
 
 #[derive(Serialize, Deserialize, Debug)]

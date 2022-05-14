@@ -46,39 +46,6 @@ pub struct PokemonAbilityExt {
 }
 
 impl PokemonAbilityExt {
-    pub fn effects(&self) -> (String, String) {
-        let mut effect = String::new();
-        let mut short_effect = String::new();
-
-        let effects: Vec<&VerboseEffect> = self
-            .effect_entries
-            .as_ref()
-            .unwrap()
-            .iter()
-            .filter(|ee| {
-                let mut ok = false;
-
-                if let Some(language) = &ee.language {
-                    ok = language.name.as_ref().unwrap_or(&String::new()) == "en"
-                }
-
-                ok
-            })
-            .collect();
-
-        if let Some(verbose_effects) = effects.first() {
-            if let Some(fetched_effect) = verbose_effects.effect.as_ref() {
-                effect = fetched_effect.to_string()
-            }
-
-            if let Some(fetched_short_effect) = verbose_effects.short_effect.as_ref() {
-                short_effect = fetched_short_effect.to_string()
-            }
-        }
-
-        (effect, short_effect)
-    }
-
     pub fn get_renderable_name(&self) -> String {
         self.name
             .as_ref()
