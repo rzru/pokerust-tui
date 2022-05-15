@@ -11,7 +11,8 @@ use tui::{
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    app::{App, CurrentMainPageState, ExtendedPokemonInfo, SelectedPart},
+    app::App,
+    models::{CurrentMainPageState, ExtendedPokemonInfo, SelectedPart},
     utils::PreparePokemonNameForDisplay,
 };
 
@@ -20,6 +21,7 @@ type CrosstermFrame<'a> = Frame<'a, CrosstermBackend<Stdout>>;
 pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
     let (list_area, search_area, main_area) = prepare_chunks(frame);
     let (basic_info_area, held_items_area) = prepare_main_block_chunks(main_area);
+    let (abilities_area, moves_area) = prepare_main_block_second_page_chunks(main_area);
     let (basic_info_area, pokemon_stats_area, pokedex_numbers_area) =
         prepare_basic_info_chunks(basic_info_area);
     let (list_style, main_style) = get_styles(app);
@@ -28,8 +30,8 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
     render_search(frame, app, search_area, list_style);
     render_main_block(frame, app, main_area, main_style);
 
-    if let CurrentMainPageState::BasicInfo = app.current_main_page_state {
-        if let Some(current_pokemon) = app.current_pokemon.as_ref() {
+    if let Some(current_pokemon) = app.current_pokemon.as_ref() {
+        if let CurrentMainPageState::BasicInfo = app.current_main_page_state {
             let basic_info_table = get_renderable_basic_info_table(current_pokemon);
             let pokemon_stats_table = get_renderable_pokemon_stats_table(current_pokemon);
             let pokemon_held_items_table = get_renderable_pokemon_held_items_table(current_pokemon);
@@ -39,6 +41,11 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
             frame.render_widget(pokemon_stats_table, pokemon_stats_area);
             frame.render_widget(pokedex_numbers_table, pokedex_numbers_area);
             frame.render_widget(pokemon_held_items_table, held_items_area);
+        }
+
+        if let CurrentMainPageState::Abilities = app.current_main_page_state {
+            let abilities_table = get_renderable_pokemon_abilities_table(current_pokemon);
+            frame.render_widget(abilities_table, abilities_area);
         }
     }
 }
@@ -63,6 +70,16 @@ fn prepare_main_block_chunks(area: Rect) -> (Rect, Rect) {
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
         .margin(1)
         .direction(Direction::Horizontal)
+        .split(area);
+
+    (main_block_chunks[0], main_block_chunks[1])
+}
+
+fn prepare_main_block_second_page_chunks(area: Rect) -> (Rect, Rect) {
+    let main_block_chunks = Layout::default()
+        .constraints([Constraint::Percentage(30), Constraint::Percentage(60)].as_ref())
+        .margin(1)
+        .direction(Direction::Vertical)
         .split(area);
 
     (main_block_chunks[0], main_block_chunks[1])
@@ -192,6 +209,24 @@ fn get_renderable_pokemon_held_items_table(current_pokemon: &ExtendedPokemonInfo
             Constraint::Percentage(33),
             Constraint::Percentage(33),
             Constraint::Percentage(33),
+        ])
+        .column_spacing(1)
+}
+
+fn get_renderable_pokemon_abilities_table(current_pokemon: &ExtendedPokemonInfo) -> Table {
+    Table::new(current_pokemon.get_renderable_abilities())
+        .header(
+            Row::new(vec!["\u{A0}Is Hidden", "Name", "Effect"])
+                .style(Style::default().fg(Color::Blue)),
+        )
+        .block(Block::default().title(Spans::from(Span::styled(
+            "\u{A0}Abilities",
+            Style::default().add_modifier(Modifier::BOLD),
+        ))))
+        .widths(&[
+            Constraint::Percentage(10),
+            Constraint::Percentage(15),
+            Constraint::Percentage(75),
         ])
         .column_spacing(1)
 }

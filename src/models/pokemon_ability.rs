@@ -15,9 +15,9 @@ pub struct PokemonAbility {
 impl PokemonAbility {
     pub fn get_renderable_is_hidden(&self) -> Span {
         Span::raw(if self.is_hidden.unwrap_or(false) {
-            "Yes"
+            "\u{A0}Yes"
         } else {
-            "No"
+            "\u{A0}No"
         })
     }
 
@@ -90,7 +90,10 @@ impl VerboseEffect {
     }
 
     pub fn get_effect(&self) -> String {
-        self.effect.as_ref().unwrap_or(&"".to_string()).to_string()
+        self.short_effect
+            .as_ref()
+            .unwrap_or(&"".to_string())
+            .to_string()
     }
 }
 
