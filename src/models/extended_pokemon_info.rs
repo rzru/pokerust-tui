@@ -6,25 +6,6 @@ use tui::{
 
 use super::{pokemon_move::PokemonMoveExt, Pokemon, PokemonAbilityExt, PokemonSpecies};
 
-pub enum SelectedPart {
-    List,
-    Main,
-}
-
-pub enum CurrentMainPageState {
-    BasicInfo,
-    Abilities,
-}
-
-impl CurrentMainPageState {
-    pub fn get_next(&self) -> Self {
-        match self {
-            Self::BasicInfo => Self::Abilities,
-            Self::Abilities => Self::BasicInfo,
-        }
-    }
-}
-
 pub struct ExtendedPokemonInfo {
     pub pokemon: Pokemon,
     pub abilities: Vec<PokemonAbilityExt>,
@@ -37,21 +18,29 @@ impl ExtendedPokemonInfo {
         self.pokemon
             .abilities
             .as_ref()
-            .unwrap()
-            .iter()
-            .filter_map(|ability| {
-                let extended_ability = self.abilities.iter().find(|extended_ability| {
-                    if let Some(item_ability) = ability.ability.as_ref() {
-                        return extended_ability.name.as_ref().unwrap_or(&"".to_string())
-                            == item_ability.name.as_ref().unwrap_or(&"".to_string());
-                    }
+            .and_then(|abilities| {
+                Some(
+                    abilities
+                        .iter()
+                        .filter_map(|ability| {
+                            let extended_ability = self.abilities.iter().find(|extended_ability| {
+                                if let Some(item_ability) = ability.ability.as_ref() {
+                                    return extended_ability
+                                        .name
+                                        .as_ref()
+                                        .unwrap_or(&"".to_string())
+                                        == item_ability.name.as_ref().unwrap_or(&"".to_string());
+                                }
 
-                    false
-                });
+                                false
+                            });
 
-                ability.get_renderable_as_row(extended_ability)
+                            ability.get_renderable_as_row(extended_ability)
+                        })
+                        .collect(),
+                )
             })
-            .collect()
+            .unwrap_or(vec![])
     }
 
     pub fn get_renderable_basic_info_items(&self) -> Vec<Row> {
@@ -116,5 +105,31 @@ impl ExtendedPokemonInfo {
                 self.species.get_renderable_is_legendary(),
             ]),
         ]
+    }
+
+    pub fn get_renderable_moves(&self) -> Vec<Row> {
+        self.pokemon
+            .moves
+            .as_ref()
+            .and_then(|pokemon_moves| {
+                Some(
+                    pokemon_moves
+                        .iter()
+                        .filter_map(|pokemon_move| {
+                            let extended_pokemon_move = self.moves.iter().find(|extended_move| {
+                                if let Some(pokemon_move) = pokemon_move.de_move.as_ref() {
+                                    return extended_move.name.as_ref().unwrap_or(&"".to_string())
+                                        == pokemon_move.name.as_ref().unwrap_or(&"".to_string());
+                                }
+
+                                false
+                            });
+
+                            pokemon_move.get_renderable_as_row(extended_pokemon_move)
+                        })
+                        .collect(),
+                )
+            })
+            .unwrap_or(vec![])
     }
 }

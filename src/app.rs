@@ -2,16 +2,32 @@ use tokio::join;
 
 use crate::{
     http::{fetch_external, Http},
-    models::{
-        pokemon_move::PokemonMoveExt, CurrentMainPageState, ExtendedPokemonInfo, NamedApiResource,
-        Pokemon, PokemonSpecies, SelectedPart,
-    },
+    models::{ExtendedPokemonInfo, NamedApiResource, Pokemon, PokemonMoveExt, PokemonSpecies},
     models::{PokemonAbilityExt, PokemonListWrapper},
     stateful_list::StatefulList,
     POKEAPI_DEFAULT_URL,
 };
 
 pub type TestStatefulList = StatefulList<NamedApiResource>;
+
+pub enum SelectedPart {
+    List,
+    Main,
+}
+
+pub enum CurrentMainPageState {
+    BasicInfo,
+    Abilities,
+}
+
+impl CurrentMainPageState {
+    pub fn get_next(&self) -> Self {
+        match self {
+            Self::BasicInfo => Self::Abilities,
+            Self::Abilities => Self::BasicInfo,
+        }
+    }
+}
 
 pub struct App {
     pub pokemon_list: TestStatefulList,

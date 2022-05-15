@@ -11,8 +11,8 @@ use tui::{
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    app::App,
-    models::{CurrentMainPageState, ExtendedPokemonInfo, SelectedPart},
+    app::{App, CurrentMainPageState, SelectedPart},
+    models::ExtendedPokemonInfo,
     utils::PreparePokemonNameForDisplay,
 };
 
@@ -45,7 +45,10 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
 
         if let CurrentMainPageState::Abilities = app.current_main_page_state {
             let abilities_table = get_renderable_pokemon_abilities_table(current_pokemon);
+            let moves_table = get_renderable_pokemon_moves_table(current_pokemon);
+
             frame.render_widget(abilities_table, abilities_area);
+            frame.render_widget(moves_table, moves_area);
         }
     }
 }
@@ -77,7 +80,7 @@ fn prepare_main_block_chunks(area: Rect) -> (Rect, Rect) {
 
 fn prepare_main_block_second_page_chunks(area: Rect) -> (Rect, Rect) {
     let main_block_chunks = Layout::default()
-        .constraints([Constraint::Percentage(30), Constraint::Percentage(60)].as_ref())
+        .constraints([Constraint::Percentage(12), Constraint::Percentage(88)].as_ref())
         .margin(1)
         .direction(Direction::Vertical)
         .split(area);
@@ -216,7 +219,7 @@ fn get_renderable_pokemon_held_items_table(current_pokemon: &ExtendedPokemonInfo
 fn get_renderable_pokemon_abilities_table(current_pokemon: &ExtendedPokemonInfo) -> Table {
     Table::new(current_pokemon.get_renderable_abilities())
         .header(
-            Row::new(vec!["\u{A0}Is Hidden", "Name", "Effect"])
+            Row::new(vec!["\u{A0}Name", "Effect", "Is Hidden"])
                 .style(Style::default().fg(Color::Blue)),
         )
         .block(Block::default().title(Spans::from(Span::styled(
@@ -225,8 +228,38 @@ fn get_renderable_pokemon_abilities_table(current_pokemon: &ExtendedPokemonInfo)
         ))))
         .widths(&[
             Constraint::Percentage(10),
-            Constraint::Percentage(15),
             Constraint::Percentage(75),
+            Constraint::Percentage(15),
+        ])
+        .column_spacing(1)
+}
+
+fn get_renderable_pokemon_moves_table(current_pokemon: &ExtendedPokemonInfo) -> Table {
+    Table::new(current_pokemon.get_renderable_moves())
+        .header(
+            Row::new(vec![
+                "\u{A0}Name",
+                "Accuracy",
+                "PP",
+                "Power",
+                "Type",
+                "Damage Class",
+                "Effect",
+            ])
+            .style(Style::default().fg(Color::Blue)),
+        )
+        .block(Block::default().title(Spans::from(Span::styled(
+            "\u{A0}Abilities",
+            Style::default().add_modifier(Modifier::BOLD),
+        ))))
+        .widths(&[
+            Constraint::Percentage(10),
+            Constraint::Percentage(5),
+            Constraint::Percentage(4),
+            Constraint::Percentage(5),
+            Constraint::Percentage(8),
+            Constraint::Percentage(8),
+            Constraint::Percentage(60),
         ])
         .column_spacing(1)
 }

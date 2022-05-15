@@ -10,13 +10,12 @@ use std::{
     time::Duration,
 };
 
-use app::App;
+use app::{App, SelectedPart};
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use models::SelectedPart;
 use tui::{backend::CrosstermBackend, Terminal};
 use ui::render;
 
