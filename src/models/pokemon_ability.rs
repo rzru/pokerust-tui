@@ -64,7 +64,11 @@ impl PokemonAbilityExt {
                         .collect::<Vec<&VerboseEffect>>(),
                 )
             })
-            .and_then(|verbose_effects| Some(verbose_effects.first().unwrap().get_effect()))
+            .and_then(|verbose_effects| {
+                verbose_effects
+                    .first()
+                    .and_then(|verbose_effect| Some(verbose_effect.get_effect()))
+            })
             .unwrap_or(String::new())
     }
 }
@@ -87,5 +91,103 @@ impl VerboseEffect {
 
     pub fn get_effect(&self) -> String {
         self.effect.as_ref().unwrap_or(&"".to_string()).to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tui::{text::Span, widgets::Row};
+
+    use crate::models::NamedApiResource;
+
+    use super::{PokemonAbility, PokemonAbilityExt, VerboseEffect};
+
+    fn get_stub_verbose_effect() -> VerboseEffect {
+        VerboseEffect {
+            effect: Some(String::from("effect")),
+            short_effect: Some(String::from("short effect")),
+            language: Some(NamedApiResource {
+                name: Some(String::from("en")),
+                url: None,
+            }),
+        }
+    }
+
+    fn get_stub_pokemon_ability(is_hidden: bool) -> PokemonAbility {
+        PokemonAbility {
+            is_hidden: Some(is_hidden),
+            slot: None,
+            ability: Some(NamedApiResource {
+                name: Some(String::from("test")),
+                url: None,
+            }),
+        }
+    }
+
+    fn get_stub_pokemon_ability_ext() -> PokemonAbilityExt {
+        PokemonAbilityExt {
+            id: Some(1),
+            name: Some(String::from("test")),
+            effect_entries: Some(vec![get_stub_verbose_effect()]),
+            flavor_text_entries: None,
+        }
+    }
+
+    #[test]
+    fn pokemon_ability_get_renderable_is_hidden_work_with_hidden() {
+        assert_eq!(
+            Span::raw("Yes"),
+            get_stub_pokemon_ability(true).get_renderable_is_hidden()
+        )
+    }
+
+    #[test]
+    fn pokemon_ability_get_renderable_is_hidden_work_with_not_hidden() {
+        assert_eq!(
+            Span::raw("No"),
+            get_stub_pokemon_ability(false).get_renderable_is_hidden()
+        )
+    }
+
+    #[test]
+    fn pokemon_ability_get_renderable_as_row() {
+        let extended_pokemon_info = get_stub_pokemon_ability_ext();
+        assert_eq!(
+            Some(Row::new(vec![
+                Span::raw("No"),
+                Span::raw("Test"),
+                Span::raw("effect")
+            ])),
+            get_stub_pokemon_ability(false).get_renderable_as_row(Some(&extended_pokemon_info))
+        )
+    }
+
+    #[test]
+    fn pokemon_ability_ext_get_renderable_name() {
+        assert_eq!(
+            String::from("Test"),
+            get_stub_pokemon_ability_ext().get_renderable_name()
+        )
+    }
+
+    #[test]
+    fn pokemon_ability_ext_get_renderable_effect_entry() {
+        assert_eq!(
+            String::from("effect"),
+            get_stub_pokemon_ability_ext().get_renderable_effect_entry()
+        )
+    }
+
+    #[test]
+    fn verbose_effect_get_effect() {
+        assert_eq!(
+            String::from("effect"),
+            get_stub_verbose_effect().get_effect()
+        )
+    }
+
+    #[test]
+    fn verbose_effect_get_language() {
+        assert_eq!(String::from("en"), get_stub_verbose_effect().get_language())
     }
 }
