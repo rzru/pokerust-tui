@@ -11,8 +11,8 @@ use tui::{
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    app::{App, ExtendedPokemonInfo, SelectedPart},
-    utils::{get_renderable_title, PreparePokemonNameForDisplay},
+    app::{App, CurrentMainPageState, ExtendedPokemonInfo, SelectedPart},
+    utils::PreparePokemonNameForDisplay,
 };
 
 type CrosstermFrame<'a> = Frame<'a, CrosstermBackend<Stdout>>;
@@ -28,16 +28,18 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
     render_search(frame, app, search_area, list_style);
     render_main_block(frame, app, main_area, main_style);
 
-    if let Some(current_pokemon) = app.current_pokemon.as_ref() {
-        let basic_info_paragraph = get_renderable_basic_info(current_pokemon);
-        let pokemon_stats_table = get_renderable_pokemon_stats_table(current_pokemon);
-        let pokemon_held_items_table = get_renderable_pokemon_held_items_table(current_pokemon);
-        let pokedex_numbers_table = get_renderable_pokedex_numbers_table(current_pokemon);
+    if let CurrentMainPageState::BasicInfo = app.current_main_page_state {
+        if let Some(current_pokemon) = app.current_pokemon.as_ref() {
+            let basic_info_table = get_renderable_basic_info_table(current_pokemon);
+            let pokemon_stats_table = get_renderable_pokemon_stats_table(current_pokemon);
+            let pokemon_held_items_table = get_renderable_pokemon_held_items_table(current_pokemon);
+            let pokedex_numbers_table = get_renderable_pokedex_numbers_table(current_pokemon);
 
-        frame.render_widget(basic_info_paragraph, basic_info_area);
-        frame.render_widget(pokemon_stats_table, pokemon_stats_area);
-        frame.render_widget(pokedex_numbers_table, pokedex_numbers_area);
-        frame.render_widget(pokemon_held_items_table, held_items_area);
+            frame.render_widget(basic_info_table, basic_info_area);
+            frame.render_widget(pokemon_stats_table, pokemon_stats_area);
+            frame.render_widget(pokedex_numbers_table, pokedex_numbers_area);
+            frame.render_widget(pokemon_held_items_table, held_items_area);
+        }
     }
 }
 
@@ -71,8 +73,8 @@ fn prepare_basic_info_chunks(area: Rect) -> (Rect, Rect, Rect) {
         .constraints(
             [
                 Constraint::Percentage(25),
-                Constraint::Percentage(17),
-                Constraint::Percentage(25),
+                Constraint::Percentage(15),
+                Constraint::Percentage(60),
             ]
             .as_ref(),
         )
@@ -158,7 +160,6 @@ fn get_styles(app: &App) -> (Style, Style) {
 
 fn get_renderable_pokemon_stats_table(current_pokemon: &ExtendedPokemonInfo) -> Table {
     Table::new(current_pokemon.pokemon.get_renderable_stats())
-        .header(Row::new(vec!["\u{A0}Name", "Base Stat"]).style(Style::default().fg(Color::Blue)))
         .block(Block::default().title(Spans::from(Span::styled(
             "\u{A0}Base Stats",
             Style::default().add_modifier(Modifier::BOLD),
@@ -167,62 +168,14 @@ fn get_renderable_pokemon_stats_table(current_pokemon: &ExtendedPokemonInfo) -> 
         .column_spacing(1)
 }
 
-fn get_renderable_basic_info(current_pokemon: &ExtendedPokemonInfo) -> Paragraph {
-    let basic_info = vec![
-        Spans::from(vec![
-            get_renderable_title("ID"),
-            current_pokemon.pokemon.get_renderable_id(),
-        ]),
-        Spans::from(vec![
-            get_renderable_title("Order"),
-            current_pokemon.pokemon.get_renderable_order(),
-        ]),
-        Spans::from(vec![
-            get_renderable_title("Name"),
-            current_pokemon.pokemon.get_renderable_name(),
-        ]),
-        Spans::from({
-            let mut spans = vec![get_renderable_title("Types")];
-            spans.extend(current_pokemon.pokemon.get_renderable_types());
-
-            spans
-        }),
-        Spans::from(vec![
-            get_renderable_title("Height"),
-            current_pokemon.pokemon.get_renderable_height(),
-        ]),
-        Spans::from(vec![
-            get_renderable_title("Weight"),
-            current_pokemon.pokemon.get_renderable_weight(),
-        ]),
-        Spans::from(vec![
-            get_renderable_title("Base Experience"),
-            current_pokemon.pokemon.get_renderable_base_experience(),
-        ]),
-        Spans::from(vec![
-            get_renderable_title("Base Happiness"),
-            current_pokemon.species.get_renderable_base_happiness(),
-        ]),
-        Spans::from(vec![
-            get_renderable_title("Capture Rate"),
-            current_pokemon.species.get_renderable_capture_rate(),
-        ]),
-        Spans::from(vec![
-            get_renderable_title("Color"),
-            current_pokemon.species.get_renderable_color(),
-        ]),
-        Spans::from(vec![
-            get_renderable_title("Is Legendary"),
-            current_pokemon.species.get_renderable_is_legendary(),
-        ]),
-    ];
-
-    Paragraph::new(basic_info)
+fn get_renderable_basic_info_table(current_pokemon: &ExtendedPokemonInfo) -> Table {
+    Table::new(current_pokemon.get_renderable_basic_info_items())
         .block(Block::default().title(Spans::from(Span::styled(
-            "\u{A0}Main information",
+            "\u{A0}Basic Info",
             Style::default().add_modifier(Modifier::BOLD),
         ))))
-        .wrap(Wrap { trim: true })
+        .widths(&[Constraint::Percentage(40), Constraint::Percentage(60)])
+        .column_spacing(1)
 }
 
 fn get_renderable_pokemon_held_items_table(current_pokemon: &ExtendedPokemonInfo) -> Table {
@@ -245,9 +198,6 @@ fn get_renderable_pokemon_held_items_table(current_pokemon: &ExtendedPokemonInfo
 
 fn get_renderable_pokedex_numbers_table(current_pokemon: &ExtendedPokemonInfo) -> Table {
     Table::new(current_pokemon.species.get_renderable_pokedex_numbers())
-        .header(
-            Row::new(vec!["\u{A0}Order Number", "Region"]).style(Style::default().fg(Color::Blue)),
-        )
         .block(Block::default().title(Spans::from(Span::styled(
             "\u{A0}Pokedex Numbers",
             Style::default().add_modifier(Modifier::BOLD),

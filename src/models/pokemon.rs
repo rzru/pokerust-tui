@@ -231,7 +231,7 @@ mod tests {
         assert_eq!(
             pokemon.get_renderable_stats(),
             vec![Row::new(vec![
-                Span::styled("\u{A0}Speed: ", Style::default().fg(Color::Blue)),
+                Span::styled("\u{A0}Speed", Style::default().fg(Color::Blue)),
                 Span::raw("15"),
             ])]
         )

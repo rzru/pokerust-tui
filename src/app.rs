@@ -1,5 +1,9 @@
 use tokio::join;
-use tui::widgets::Row;
+use tui::{
+    style::{Color, Style},
+    text::{Span, Spans},
+    widgets::Row,
+};
 
 use crate::{
     http::{fetch_external, Http},
@@ -14,6 +18,20 @@ pub type TestStatefulList = StatefulList<NamedApiResource>;
 pub enum SelectedPart {
     List,
     Main,
+}
+
+pub enum CurrentMainPageState {
+    BasicInfo,
+    Abilities,
+}
+
+impl CurrentMainPageState {
+    pub fn get_next(&self) -> Self {
+        match self {
+            Self::BasicInfo => Self::Abilities,
+            Self::Abilities => Self::BasicInfo,
+        }
+    }
 }
 
 pub struct ExtendedPokemonInfo {
@@ -44,6 +62,70 @@ impl ExtendedPokemonInfo {
             })
             .collect()
     }
+
+    pub fn get_renderable_basic_info_items(&self) -> Vec<Row> {
+        vec![
+            Row::new(vec![
+                Span::styled(format!("\u{A0}ID"), Style::default().fg(Color::Blue)),
+                self.pokemon.get_renderable_id(),
+            ]),
+            Row::new(vec![
+                Span::styled(format!("\u{A0}Order"), Style::default().fg(Color::Blue)),
+                self.pokemon.get_renderable_order(),
+            ]),
+            Row::new(vec![
+                Span::styled(format!("\u{A0}Name"), Style::default().fg(Color::Blue)),
+                self.pokemon.get_renderable_name(),
+            ]),
+            Row::new(vec![
+                Spans::from(Span::styled(
+                    format!("\u{A0}Types"),
+                    Style::default().fg(Color::Blue),
+                )),
+                Spans::from(self.pokemon.get_renderable_types()),
+            ]),
+            Row::new(vec![
+                Span::styled(format!("\u{A0}Height"), Style::default().fg(Color::Blue)),
+                self.pokemon.get_renderable_height(),
+            ]),
+            Row::new(vec![
+                Span::styled(format!("\u{A0}Weight"), Style::default().fg(Color::Blue)),
+                self.pokemon.get_renderable_weight(),
+            ]),
+            Row::new(vec![
+                Span::styled(
+                    format!("\u{A0}Base Experience"),
+                    Style::default().fg(Color::Blue),
+                ),
+                self.pokemon.get_renderable_base_experience(),
+            ]),
+            Row::new(vec![
+                Span::styled(
+                    format!("\u{A0}Base Happiness"),
+                    Style::default().fg(Color::Blue),
+                ),
+                self.species.get_renderable_base_happiness(),
+            ]),
+            Row::new(vec![
+                Span::styled(
+                    format!("\u{A0}Capture Rate"),
+                    Style::default().fg(Color::Blue),
+                ),
+                self.species.get_renderable_capture_rate(),
+            ]),
+            Row::new(vec![
+                Span::styled(format!("\u{A0}Color"), Style::default().fg(Color::Blue)),
+                self.species.get_renderable_color(),
+            ]),
+            Row::new(vec![
+                Span::styled(
+                    format!("\u{A0}Is Legendary"),
+                    Style::default().fg(Color::Blue),
+                ),
+                self.species.get_renderable_is_legendary(),
+            ]),
+        ]
+    }
 }
 
 pub struct App {
@@ -53,6 +135,7 @@ pub struct App {
     pub search: String,
     pub selected_part: SelectedPart,
     pub loading: bool,
+    pub current_main_page_state: CurrentMainPageState,
 }
 
 impl App {
@@ -64,6 +147,7 @@ impl App {
             search: String::new(),
             selected_part: SelectedPart::List,
             loading: false,
+            current_main_page_state: CurrentMainPageState::BasicInfo,
         }
     }
 
