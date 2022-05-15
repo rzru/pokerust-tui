@@ -1,5 +1,9 @@
 use serde::{Deserialize, Serialize};
-use tui::{text::Span, widgets::Row};
+use tui::{
+    style::{Color, Style},
+    text::Span,
+    widgets::Row,
+};
 
 use crate::utils::PreparePokemonNameForDisplay;
 
@@ -53,8 +57,14 @@ impl PokemonSpecies {
                         .iter()
                         .map(|pokedex_number| {
                             Row::new(vec![
-                                format!("\u{A0}{}", pokedex_number.get_renderable_entry_number()),
-                                pokedex_number.get_renderable_pokedex_name(),
+                                Span::styled(
+                                    format!(
+                                        "\u{A0}{}",
+                                        pokedex_number.get_renderable_pokedex_name()
+                                    ),
+                                    Style::default().fg(Color::Blue),
+                                ),
+                                Span::raw(pokedex_number.get_renderable_entry_number()),
                             ])
                         })
                         .collect(),
@@ -88,7 +98,11 @@ impl PokedexNumber {
 
 #[cfg(test)]
 mod tests {
-    use tui::{text::Span, widgets::Row};
+    use tui::{
+        style::{Color, Style},
+        text::Span,
+        widgets::Row,
+    };
 
     use crate::models::NamedApiResource;
 
@@ -150,8 +164,8 @@ mod tests {
         assert_eq!(
             species.get_renderable_pokedex_numbers(),
             vec![Row::new(vec![
-                String::from("\u{A0}1"),
-                String::from("Kanto")
+                Span::styled("\u{A0}Kanto", Style::default().fg(Color::Blue)),
+                Span::raw("1")
             ])]
         );
     }

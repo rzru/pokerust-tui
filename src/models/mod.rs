@@ -1,4 +1,5 @@
 pub mod api_resource;
+pub mod extended_pokemon_info;
 pub mod flavor_text_entry;
 pub mod named_api_resource;
 pub mod pokemon;
@@ -13,6 +14,7 @@ pub mod pokemon_type;
 pub mod version_game_index;
 
 pub use api_resource::APIResource;
+pub use extended_pokemon_info::{CurrentMainPageState, ExtendedPokemonInfo, SelectedPart};
 pub use flavor_text_entry::FlavorTextEntry;
 pub use named_api_resource::NamedApiResource;
 pub use pokemon::Pokemon;

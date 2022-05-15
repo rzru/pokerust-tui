@@ -99,6 +99,21 @@ impl Pokemon {
             })
             .unwrap_or(vec![])
     }
+
+    pub fn get_renderable_held_items(&self) -> Vec<Row> {
+        self.held_items
+            .as_ref()
+            .and_then(|held_items| {
+                let mut prepared_held_items: Vec<Row> = vec![];
+
+                held_items.iter().for_each(|held_item| {
+                    prepared_held_items.extend(held_item.get_renderable_as_rows())
+                });
+
+                Some(prepared_held_items)
+            })
+            .unwrap_or(vec![])
+    }
 }
 
 #[cfg(test)]
@@ -109,7 +124,9 @@ mod tests {
         widgets::Row,
     };
 
-    use crate::models::{NamedApiResource, PokemonStat, PokemonType};
+    use crate::models::{
+        NamedApiResource, PokemonHeldItem, PokemonHeldItemVersion, PokemonStat, PokemonType,
+    };
 
     use super::Pokemon;
 
@@ -125,7 +142,19 @@ mod tests {
             abilities: None,
             forms: None,
             game_indices: None,
-            held_items: None,
+            held_items: Some(vec![PokemonHeldItem {
+                item: Some(NamedApiResource {
+                    name: Some(String::from("sharp fang")),
+                    url: None,
+                }),
+                version_details: Some(vec![PokemonHeldItemVersion {
+                    rarity: Some(20),
+                    version: Some(NamedApiResource {
+                        name: Some(String::from("x-y")),
+                        url: None,
+                    }),
+                }]),
+            }]),
             location_area_encounters: None,
             moves: None,
             sprites: None,
@@ -202,7 +231,7 @@ mod tests {
         assert_eq!(
             pokemon.get_renderable_stats(),
             vec![Row::new(vec![
-                Span::styled("\u{A0}Speed: ", Style::default().fg(Color::Blue)),
+                Span::styled("\u{A0}Speed", Style::default().fg(Color::Blue)),
                 Span::raw("15"),
             ])]
         )

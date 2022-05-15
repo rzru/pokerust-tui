@@ -24,7 +24,7 @@ impl PokemonStat {
             .and_then(|stat| stat.name.as_ref())
             .and_then(|stat_name| {
                 Some(format!(
-                    "\u{A0}{}: ",
+                    "\u{A0}{}",
                     stat_name.to_string().split_capitalize()
                 ))
             })
@@ -71,7 +71,7 @@ mod tests {
         assert_eq!(
             pokemon_stat.get_renderable_as_row(),
             Row::new(vec![
-                Span::styled("\u{A0}Speed: ", Style::default().fg(Color::Blue)),
+                Span::styled("\u{A0}Speed", Style::default().fg(Color::Blue)),
                 Span::raw("15"),
             ])
         )
