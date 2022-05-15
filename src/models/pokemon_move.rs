@@ -17,7 +17,41 @@ pub struct PokemonMove {
 }
 
 impl PokemonMove {
-    pub fn get_renderable_as_row(&self, extended_move: Option<&PokemonMoveExt>) -> Option<Row> {
+    pub fn get_renderable_version_group_details(
+        &self,
+        selected_version: &str,
+    ) -> Option<Vec<&PokemonMoveVersion>> {
+        self.version_group_details
+            .as_ref()
+            .and_then(|version_group_details| {
+                let items = version_group_details
+                    .iter()
+                    .filter_map(|version_group_detail| {
+                        if version_group_detail
+                            .version_group
+                            .as_ref()
+                            .unwrap()
+                            .name
+                            .as_ref()
+                            .unwrap()
+                            == selected_version
+                        {
+                            return Some(version_group_detail);
+                        }
+
+                        None
+                    })
+                    .collect::<Vec<&PokemonMoveVersion>>();
+
+                Some(items)
+            })
+    }
+
+    pub fn get_renderable_as_row(
+        &self,
+        extended_move: Option<&PokemonMoveExt>,
+        move_version: &PokemonMoveVersion,
+    ) -> Option<Row> {
         if let Some(extended_move) = extended_move {
             return Some(Row::new(vec![
                 Text::styled(
@@ -29,6 +63,8 @@ impl PokemonMove {
                 Text::raw(extended_move.get_renderable_power()),
                 Text::from(get_styled_pokemon_type(extended_move.get_renderable_type())),
                 Text::raw(extended_move.get_renderable_damage_class()),
+                Text::raw(move_version.get_renderable_learn_method()),
+                Text::raw(move_version.get_renderable_level()),
                 Text::raw(extended_move.get_renderable_effect_entry()),
             ]));
         }
@@ -121,4 +157,21 @@ pub struct PokemonMoveVersion {
     pub move_learn_method: Option<NamedApiResource>,
     pub version_group: Option<NamedApiResource>,
     pub level_learned_at: Option<i32>,
+}
+
+impl PokemonMoveVersion {
+    pub fn get_renderable_learn_method(&self) -> String {
+        self.move_learn_method
+            .as_ref()
+            .and_then(|method| method.name.as_ref())
+            .and_then(|name| Some(name.to_string().split_capitalize()))
+            .unwrap_or(String::from("-"))
+    }
+
+    pub fn get_renderable_level(&self) -> String {
+        self.level_learned_at
+            .as_ref()
+            .and_then(|level| Some(level.to_string()))
+            .unwrap_or(String::from("-"))
+    }
 }

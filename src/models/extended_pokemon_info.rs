@@ -4,7 +4,10 @@ use tui::{
     widgets::Row,
 };
 
-use super::{pokemon_move::PokemonMoveExt, Pokemon, PokemonAbilityExt, PokemonSpecies};
+use super::{
+    pokemon_move::PokemonMoveExt, Pokemon, PokemonAbilityExt, PokemonMove, PokemonMoveVersion,
+    PokemonSpecies,
+};
 
 pub struct ExtendedPokemonInfo {
     pub pokemon: Pokemon,
@@ -107,7 +110,10 @@ impl ExtendedPokemonInfo {
         ]
     }
 
-    pub fn get_renderable_moves(&self) -> Vec<Row> {
+    pub fn get_prepared_moves(
+        &self,
+        selected_version: &str,
+    ) -> Vec<(&PokemonMove, Vec<&PokemonMoveVersion>)> {
         self.pokemon
             .moves
             .as_ref()
@@ -116,20 +122,68 @@ impl ExtendedPokemonInfo {
                     pokemon_moves
                         .iter()
                         .filter_map(|pokemon_move| {
-                            let extended_pokemon_move = self.moves.iter().find(|extended_move| {
-                                if let Some(pokemon_move) = pokemon_move.de_move.as_ref() {
-                                    return extended_move.name.as_ref().unwrap_or(&"".to_string())
-                                        == pokemon_move.name.as_ref().unwrap_or(&"".to_string());
-                                }
+                            pokemon_move
+                                .get_renderable_version_group_details(selected_version)
+                                .and_then(|version_group_details| {
+                                    if version_group_details.is_empty() {
+                                        return None;
+                                    }
 
-                                false
-                            });
-
-                            pokemon_move.get_renderable_as_row(extended_pokemon_move)
+                                    Some((pokemon_move, version_group_details))
+                                })
                         })
                         .collect(),
                 )
             })
             .unwrap_or(vec![])
+    }
+
+    pub fn get_renderable_moves(&self, selected_version: &str) -> Vec<Row> {
+        let mut prepared_moves = self.get_prepared_moves(selected_version);
+        prepared_moves.sort_by(|(.., first_move_versions), (.., second_move_versions)| {
+            let first_move_version = first_move_versions.first().unwrap();
+            let second_move_version = second_move_versions.first().unwrap();
+
+            first_move_version
+                .level_learned_at
+                .as_ref()
+                .unwrap()
+                .cmp(second_move_version.level_learned_at.as_ref().unwrap())
+                .then(
+                    first_move_version
+                        .move_learn_method
+                        .as_ref()
+                        .unwrap()
+                        .name
+                        .as_ref()
+                        .unwrap()
+                        .cmp(
+                            second_move_version
+                                .move_learn_method
+                                .as_ref()
+                                .unwrap()
+                                .name
+                                .as_ref()
+                                .unwrap(),
+                        ),
+                )
+        });
+
+        prepared_moves
+            .iter()
+            .filter_map(|(pokemon_move, move_versions)| {
+                let extended_pokemon_move = self.moves.iter().find(|extended_move| {
+                    if let Some(pokemon_move) = pokemon_move.de_move.as_ref() {
+                        return extended_move.name.as_ref().unwrap_or(&"".to_string())
+                            == pokemon_move.name.as_ref().unwrap_or(&"".to_string());
+                    }
+
+                    false
+                });
+
+                pokemon_move
+                    .get_renderable_as_row(extended_pokemon_move, move_versions.first().unwrap())
+            })
+            .collect()
     }
 }
