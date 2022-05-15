@@ -89,11 +89,12 @@ pub fn get_styled_pokemon_type(name: String) -> Span<'static> {
     }
 }
 
-pub trait PreparePokemonNameForDisplay {
+pub trait PrepareForDisplay {
     fn split_capitalize(self) -> Self;
+    fn append_padding(self) -> Self;
 }
 
-impl PreparePokemonNameForDisplay for String {
+impl PrepareForDisplay for String {
     fn split_capitalize(self) -> Self {
         self.split("-")
             .collect::<Vec<&str>>()
@@ -101,5 +102,9 @@ impl PreparePokemonNameForDisplay for String {
             .map(|str| uppercase_first_letter(str))
             .collect::<Vec<String>>()
             .join(" ")
+    }
+
+    fn append_padding(self) -> Self {
+        format!("\u{A0}{}", self)
     }
 }

@@ -1,8 +1,12 @@
+use std::cmp::Ordering;
+
 use tui::{
     style::{Color, Style},
     text::{Span, Spans},
     widgets::Row,
 };
+
+use crate::utils::PrepareForDisplay;
 
 use super::{
     pokemon_move::PokemonMoveExt, Pokemon, PokemonAbilityExt, PokemonMove, PokemonMoveVersion,
@@ -47,64 +51,51 @@ impl ExtendedPokemonInfo {
     }
 
     pub fn get_renderable_basic_info_items(&self) -> Vec<Row> {
+        let paint_blue = |string: String| Span::styled(string, Style::default().fg(Color::Blue));
+
         vec![
             Row::new(vec![
-                Span::styled(format!("\u{A0}ID"), Style::default().fg(Color::Blue)),
+                paint_blue(String::from("ID").append_padding()),
                 self.pokemon.get_renderable_id(),
             ]),
             Row::new(vec![
-                Span::styled(format!("\u{A0}Order"), Style::default().fg(Color::Blue)),
+                paint_blue(String::from("Order").append_padding()),
                 self.pokemon.get_renderable_order(),
             ]),
             Row::new(vec![
-                Span::styled(format!("\u{A0}Name"), Style::default().fg(Color::Blue)),
+                paint_blue(String::from("Name").append_padding()),
                 self.pokemon.get_renderable_name(),
             ]),
             Row::new(vec![
-                Spans::from(Span::styled(
-                    format!("\u{A0}Types"),
-                    Style::default().fg(Color::Blue),
-                )),
+                Spans::from(paint_blue(String::from("Types").append_padding())),
                 Spans::from(self.pokemon.get_renderable_types()),
             ]),
             Row::new(vec![
-                Span::styled(format!("\u{A0}Height"), Style::default().fg(Color::Blue)),
+                paint_blue(String::from("Height").append_padding()),
                 self.pokemon.get_renderable_height(),
             ]),
             Row::new(vec![
-                Span::styled(format!("\u{A0}Weight"), Style::default().fg(Color::Blue)),
+                paint_blue(String::from("Weight").append_padding()),
                 self.pokemon.get_renderable_weight(),
             ]),
             Row::new(vec![
-                Span::styled(
-                    format!("\u{A0}Base Experience"),
-                    Style::default().fg(Color::Blue),
-                ),
+                paint_blue(String::from("Base Experience").append_padding()),
                 self.pokemon.get_renderable_base_experience(),
             ]),
             Row::new(vec![
-                Span::styled(
-                    format!("\u{A0}Base Happiness"),
-                    Style::default().fg(Color::Blue),
-                ),
+                paint_blue(String::from("Base Happiness").append_padding()),
                 self.species.get_renderable_base_happiness(),
             ]),
             Row::new(vec![
-                Span::styled(
-                    format!("\u{A0}Capture Rate"),
-                    Style::default().fg(Color::Blue),
-                ),
+                paint_blue(String::from("Capture Rate").append_padding()),
                 self.species.get_renderable_capture_rate(),
             ]),
             Row::new(vec![
-                Span::styled(format!("\u{A0}Color"), Style::default().fg(Color::Blue)),
+                paint_blue(String::from("Color").append_padding()),
                 self.species.get_renderable_color(),
             ]),
             Row::new(vec![
-                Span::styled(
-                    format!("\u{A0}Is Legendary"),
-                    Style::default().fg(Color::Blue),
-                ),
+                paint_blue(String::from("Is Legendary").append_padding()),
                 self.species.get_renderable_is_legendary(),
             ]),
         ]
@@ -141,32 +132,41 @@ impl ExtendedPokemonInfo {
     pub fn get_renderable_moves(&self, selected_version: &str) -> Vec<Row> {
         let mut prepared_moves = self.get_prepared_moves(selected_version);
         prepared_moves.sort_by(|(.., first_move_versions), (.., second_move_versions)| {
-            let first_move_version = first_move_versions.first().unwrap();
-            let second_move_version = second_move_versions.first().unwrap();
+            if let (Some(first_move_version), Some(second_move_version)) =
+                (first_move_versions.first(), second_move_versions.first())
+            {
+                let level_cmp = first_move_version
+                    .level_learned_at
+                    .as_ref()
+                    .and_then(|first_level_learned_at| {
+                        second_move_version.level_learned_at.as_ref().and_then(
+                            |second_level_learned_at| {
+                                Some(first_level_learned_at.cmp(second_level_learned_at))
+                            },
+                        )
+                    })
+                    .unwrap_or(Ordering::Equal);
 
-            first_move_version
-                .level_learned_at
-                .as_ref()
-                .unwrap()
-                .cmp(second_move_version.level_learned_at.as_ref().unwrap())
-                .then(
-                    first_move_version
-                        .move_learn_method
-                        .as_ref()
-                        .unwrap()
-                        .name
-                        .as_ref()
-                        .unwrap()
-                        .cmp(
-                            second_move_version
-                                .move_learn_method
-                                .as_ref()
-                                .unwrap()
-                                .name
-                                .as_ref()
-                                .unwrap(),
-                        ),
-                )
+                let move_learn_method_cmp = first_move_version
+                    .move_learn_method
+                    .as_ref()
+                    .and_then(|first_move_learn_method| {
+                        second_move_version.move_learn_method.as_ref().and_then(
+                            |second_move_learn_method| {
+                                Some(
+                                    first_move_learn_method
+                                        .get_name_or_stub()
+                                        .cmp(&second_move_learn_method.get_name_or_stub()),
+                                )
+                            },
+                        )
+                    })
+                    .unwrap_or(Ordering::Equal);
+
+                return level_cmp.then(move_learn_method_cmp);
+            }
+
+            Ordering::Equal
         });
 
         prepared_moves

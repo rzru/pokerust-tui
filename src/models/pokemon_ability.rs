@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use tui::{text::Span, widgets::Row};
 
-use crate::utils::PreparePokemonNameForDisplay;
+use crate::utils::PrepareForDisplay;
 
 use super::{FlavorTextEntry, NamedApiResource, VerboseEffect};
 
@@ -27,7 +27,7 @@ impl PokemonAbility {
     ) -> Option<Row> {
         if let Some(ability) = extended_ability {
             return Some(Row::new(vec![
-                Span::raw(format!("\u{A0}{}", ability.get_renderable_name())),
+                Span::raw(ability.get_renderable_name()),
                 Span::raw(ability.get_renderable_effect_entry()),
                 self.get_renderable_is_hidden(),
             ]));
@@ -49,7 +49,7 @@ impl PokemonAbilityExt {
     pub fn get_renderable_name(&self) -> String {
         self.name
             .as_ref()
-            .and_then(|name| Some(name.to_string().split_capitalize()))
+            .and_then(|name| Some(name.to_string().split_capitalize().append_padding()))
             .unwrap_or(String::new())
     }
 
@@ -129,9 +129,9 @@ mod tests {
         let extended_pokemon_info = get_stub_pokemon_ability_ext();
         assert_eq!(
             Some(Row::new(vec![
+                Span::raw("\u{A0}Test"),
+                Span::raw("short effect"),
                 Span::raw("No"),
-                Span::raw("Test"),
-                Span::raw("effect")
             ])),
             get_stub_pokemon_ability(false).get_renderable_as_row(Some(&extended_pokemon_info))
         )
@@ -140,7 +140,7 @@ mod tests {
     #[test]
     fn pokemon_ability_ext_get_renderable_name() {
         assert_eq!(
-            String::from("Test"),
+            String::from("\u{A0}Test"),
             get_stub_pokemon_ability_ext().get_renderable_name()
         )
     }
@@ -148,7 +148,7 @@ mod tests {
     #[test]
     fn pokemon_ability_ext_get_renderable_effect_entry() {
         assert_eq!(
-            String::from("effect"),
+            String::from("short effect"),
             get_stub_pokemon_ability_ext().get_renderable_effect_entry()
         )
     }

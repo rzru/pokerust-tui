@@ -60,7 +60,7 @@ async fn run_app(
     let tick_rate = Duration::from_millis(250);
 
     let (pokemon_list, version_groups) =
-        join!(app.fetch_pokemon_list(), app.fetch_version_groups());
+        join!(app.fetch_list("pokemon"), app.fetch_list("version-group"));
     app.set_pokemon_list_and_version_groups(pokemon_list, version_groups);
     loop {
         terminal.draw(|frame| render(frame, &mut app))?;

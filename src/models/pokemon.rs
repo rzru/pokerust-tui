@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use tui::{text::Span, widgets::Row};
 
-use crate::utils::PreparePokemonNameForDisplay;
+use crate::utils::PrepareForDisplay;
 
 use super::{
     NamedApiResource, PokemonAbility, PokemonHeldItem, PokemonMove, PokemonSprites, PokemonStat,

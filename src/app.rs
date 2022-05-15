@@ -48,47 +48,49 @@ pub struct App {
 impl App {
     pub fn new() -> Self {
         Self {
-            pokemon_list: StatefulList::with_items(vec![]),
             http: Http::new(),
-            current_pokemon: None,
             search: String::new(),
-            selected_part: SelectedPart::List,
             loading: false,
+            pokemon_list: StatefulList::with_items(vec![]),
+            selected_part: SelectedPart::List,
+            version_groups: StatefulList::with_items(vec![]),
+            current_pokemon: None,
+            selected_version: None,
             current_main_page_state: CurrentMainPageState::VersionGroupSelection,
             pokemon_moves_list_state: SwitchableTableState::new(),
-            selected_version: None,
-            version_groups: StatefulList::with_items(vec![]),
         }
     }
 
-    pub async fn fetch_pokemon_list(&self) -> Vec<NamedApiResource> {
+    pub async fn fetch_list(&self, list_name: &str) -> Vec<NamedApiResource> {
         let uri = format!(
             "{}{}{}",
-            POKEAPI_DEFAULT_URL, "pokemon", DEFAULT_LIST_QUERY_PARAMS
+            POKEAPI_DEFAULT_URL, list_name, DEFAULT_LIST_QUERY_PARAMS
         );
-        let pokemon_list: Option<ListWrapper> = self.http.get_as_object(&uri).await;
+        let results: Option<ListWrapper> = self.http.get_as_object(&uri).await;
 
-        pokemon_list.unwrap().results.unwrap()
-    }
-
-    pub async fn fetch_version_groups(&self) -> Vec<NamedApiResource> {
-        let uri = format!(
-            "{}{}{}",
-            POKEAPI_DEFAULT_URL, "version-group", DEFAULT_LIST_QUERY_PARAMS
-        );
-        let version_groups_list: Option<ListWrapper> = self.http.get_as_object(&uri).await;
-
-        version_groups_list.unwrap().results.unwrap()
+        results
+            .and_then(|list_wrapper| list_wrapper.results)
+            .unwrap_or(vec![])
     }
 
     pub async fn fetch_abilities_and_moves(&mut self) {
         if let Some(current_pokemon) = self.current_pokemon.as_mut() {
+            let empty_abilities = vec![];
+            let empty_moves = vec![];
             let fetch_url =
                 |api_resource: &NamedApiResource| api_resource.url.as_ref().unwrap().to_string();
 
             let (abilities, moves) = (
-                current_pokemon.pokemon.abilities.as_ref().unwrap(),
-                current_pokemon.pokemon.moves.as_ref().unwrap(),
+                current_pokemon
+                    .pokemon
+                    .abilities
+                    .as_ref()
+                    .unwrap_or(&empty_abilities),
+                current_pokemon
+                    .pokemon
+                    .moves
+                    .as_ref()
+                    .unwrap_or(&empty_moves),
             );
 
             let (abilities, moves): (Vec<PokemonAbilityExt>, Vec<PokemonMoveExt>) = join!(

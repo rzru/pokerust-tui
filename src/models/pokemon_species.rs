@@ -5,7 +5,7 @@ use tui::{
     widgets::Row,
 };
 
-use crate::utils::PreparePokemonNameForDisplay;
+use crate::utils::PrepareForDisplay;
 
 use super::{APIResource, FlavorTextEntry, NamedApiResource};
 
@@ -58,10 +58,9 @@ impl PokemonSpecies {
                         .map(|pokedex_number| {
                             Row::new(vec![
                                 Span::styled(
-                                    format!(
-                                        "\u{A0}{}",
-                                        pokedex_number.get_renderable_pokedex_name()
-                                    ),
+                                    pokedex_number
+                                        .get_renderable_pokedex_name()
+                                        .append_padding(),
                                     Style::default().fg(Color::Blue),
                                 ),
                                 Span::raw(pokedex_number.get_renderable_entry_number()),

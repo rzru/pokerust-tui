@@ -46,7 +46,7 @@ mod tests {
     #[test]
     fn verbose_effect_get_effect() {
         assert_eq!(
-            String::from("effect"),
+            String::from("short effect"),
             get_stub_verbose_effect().get_effect()
         )
     }

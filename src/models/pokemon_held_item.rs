@@ -5,7 +5,7 @@ use tui::{
     widgets::Row,
 };
 
-use crate::utils::PreparePokemonNameForDisplay;
+use crate::utils::PrepareForDisplay;
 
 use super::NamedApiResource;
 
@@ -22,7 +22,7 @@ impl PokemonHeldItem {
             .and_then(|item| item.name.as_ref())
             .and_then(|name| {
                 Some(Span::styled(
-                    format!("\u{A0}{}", name.to_string().split_capitalize()),
+                    name.to_string().split_capitalize().append_padding(),
                     Style::default().fg(Color::Blue),
                 ))
             })

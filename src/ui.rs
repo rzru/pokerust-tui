@@ -13,7 +13,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::{
     app::{App, CurrentMainPageState, SelectedPart},
     models::ExtendedPokemonInfo,
-    utils::PreparePokemonNameForDisplay,
+    utils::PrepareForDisplay,
 };
 
 type CrosstermFrame<'a> = Frame<'a, CrosstermBackend<Stdout>>;
@@ -102,7 +102,7 @@ fn prepare_main_block_chunks(area: Rect) -> (Rect, Rect) {
 
 fn prepare_main_block_second_page_chunks(area: Rect) -> (Rect, Rect) {
     let main_block_chunks = Layout::default()
-        .constraints([Constraint::Percentage(12), Constraint::Percentage(88)].as_ref())
+        .constraints([Constraint::Length(6), Constraint::Percentage(90)].as_ref())
         .margin(1)
         .direction(Direction::Vertical)
         .split(area);
@@ -124,9 +124,9 @@ fn prepare_basic_info_chunks(area: Rect) -> (Rect, Rect, Rect) {
     let left_block_chunks = Layout::default()
         .constraints(
             [
-                Constraint::Percentage(25),
-                Constraint::Percentage(15),
-                Constraint::Percentage(60),
+                Constraint::Length(13),
+                Constraint::Length(8),
+                Constraint::Percentage(90),
             ]
             .as_ref(),
         )

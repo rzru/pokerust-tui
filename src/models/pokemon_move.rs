@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 use tui::{
     style::{Color, Style},
-    text::Text,
+    text::Span,
     widgets::Row,
 };
 
-use crate::utils::{get_styled_pokemon_type, PreparePokemonNameForDisplay};
+use crate::utils::{get_styled_pokemon_type, PrepareForDisplay};
 
 use super::{FlavorTextEntry, NamedApiResource, VerboseEffect};
 
@@ -27,16 +27,10 @@ impl PokemonMove {
                 let items = version_group_details
                     .iter()
                     .filter_map(|version_group_detail| {
-                        if version_group_detail
-                            .version_group
-                            .as_ref()
-                            .unwrap()
-                            .name
-                            .as_ref()
-                            .unwrap()
-                            == selected_version
-                        {
-                            return Some(version_group_detail);
+                        if let Some(version_group) = version_group_detail.version_group.as_ref() {
+                            if version_group.get_name_or_stub() == selected_version {
+                                return Some(version_group_detail);
+                            }
                         }
 
                         None
@@ -54,18 +48,18 @@ impl PokemonMove {
     ) -> Option<Row> {
         if let Some(extended_move) = extended_move {
             return Some(Row::new(vec![
-                Text::styled(
-                    format!("\u{A0}{}", extended_move.get_renderable_name()),
+                Span::styled(
+                    extended_move.get_renderable_name(),
                     Style::default().fg(Color::Blue),
                 ),
-                Text::raw(extended_move.get_renderable_accuracy()),
-                Text::raw(extended_move.get_renderable_pp()),
-                Text::raw(extended_move.get_renderable_power()),
-                Text::from(get_styled_pokemon_type(extended_move.get_renderable_type())),
-                Text::raw(extended_move.get_renderable_damage_class()),
-                Text::raw(move_version.get_renderable_learn_method()),
-                Text::raw(move_version.get_renderable_level()),
-                Text::raw(extended_move.get_renderable_effect_entry()),
+                Span::raw(extended_move.get_renderable_accuracy()),
+                Span::raw(extended_move.get_renderable_pp()),
+                Span::raw(extended_move.get_renderable_power()),
+                Span::from(get_styled_pokemon_type(extended_move.get_renderable_type())),
+                Span::raw(extended_move.get_renderable_damage_class()),
+                Span::raw(move_version.get_renderable_learn_method()),
+                Span::raw(move_version.get_renderable_level()),
+                Span::raw(extended_move.get_renderable_effect_entry()),
             ]));
         }
 
@@ -91,7 +85,7 @@ impl PokemonMoveExt {
     pub fn get_renderable_name(&self) -> String {
         self.name
             .as_ref()
-            .and_then(|name| Some(name.to_string().split_capitalize()))
+            .and_then(|name| Some(name.to_string().split_capitalize().append_padding()))
             .unwrap_or(String::new())
     }
 
