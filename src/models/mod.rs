@@ -23,7 +23,7 @@ pub use pokemon::Pokemon;
 pub use pokemon_ability::{PokemonAbility, PokemonAbilityExt};
 pub use pokemon_held_item::{PokemonHeldItem, PokemonHeldItemVersion};
 pub use pokemon_move::{PokemonMove, PokemonMoveExt, PokemonMoveVersion};
-pub use pokemon_species::PokemonSpecies;
+pub use pokemon_species::{PokedexNumber, PokemonSpecies};
 pub use pokemon_sprites::PokemonSprites;
 pub use pokemon_stat::PokemonStat;
 pub use pokemon_type::PokemonType;

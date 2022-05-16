@@ -55,7 +55,7 @@ impl PokemonMove {
                 Span::raw(extended_move.get_renderable_accuracy()),
                 Span::raw(extended_move.get_renderable_pp()),
                 Span::raw(extended_move.get_renderable_power()),
-                Span::from(get_styled_pokemon_type(extended_move.get_renderable_type())),
+                get_styled_pokemon_type(extended_move.get_renderable_type()),
                 Span::raw(extended_move.get_renderable_damage_class()),
                 Span::raw(move_version.get_renderable_learn_method()),
                 Span::raw(move_version.get_renderable_level()),
