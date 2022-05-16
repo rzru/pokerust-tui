@@ -236,4 +236,17 @@ mod tests {
             ])]
         )
     }
+
+    #[test]
+    fn pokemon_get_renderable_held_items() {
+        let pokemon = get_stub_pokemon();
+        assert_eq!(
+            pokemon.get_renderable_held_items(),
+            vec![Row::new(vec![
+                Span::styled("\u{A0}Sharp fang", Style::default().fg(Color::Blue)),
+                Span::raw("20"),
+                Span::raw("X Y"),
+            ]),]
+        )
+    }
 }

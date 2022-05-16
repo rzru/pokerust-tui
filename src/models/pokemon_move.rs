@@ -169,3 +169,206 @@ impl PokemonMoveVersion {
             .unwrap_or(String::from("-"))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use tui::{
+        style::{Color, Style},
+        text::Span,
+        widgets::Row,
+    };
+
+    use crate::models::NamedApiResource;
+
+    use super::{PokemonMove, PokemonMoveExt, PokemonMoveVersion, VerboseEffect};
+
+    fn get_stub_pokemon_move_version() -> PokemonMoveVersion {
+        PokemonMoveVersion {
+            level_learned_at: Some(25),
+            move_learn_method: Some(NamedApiResource {
+                name: Some(String::from("level up")),
+                url: None,
+            }),
+            version_group: Some(NamedApiResource {
+                name: Some(String::from("x-y")),
+                url: None,
+            }),
+        }
+    }
+
+    fn get_stub_pokemon_move() -> PokemonMove {
+        PokemonMove {
+            de_move: Some(NamedApiResource {
+                name: Some(String::from("pound")),
+                url: None,
+            }),
+            version_group_details: Some(vec![
+                get_stub_pokemon_move_version(),
+                PokemonMoveVersion {
+                    level_learned_at: Some(0),
+                    move_learn_method: Some(NamedApiResource {
+                        name: Some(String::from("egg")),
+                        url: None,
+                    }),
+                    version_group: Some(NamedApiResource {
+                        name: Some(String::from("sword-shield")),
+                        url: None,
+                    }),
+                },
+            ]),
+        }
+    }
+
+    fn get_stub_pokemon_move_ext() -> PokemonMoveExt {
+        PokemonMoveExt {
+            id: Some(1),
+            name: Some(String::from("pound")),
+            accuracy: Some(100),
+            pp: Some(20),
+            power: Some(60),
+            pk_type: Some(NamedApiResource {
+                name: Some(String::from("normal")),
+                url: None,
+            }),
+            flavor_text_entries: None,
+            effect_entries: Some(vec![VerboseEffect {
+                effect: None,
+                short_effect: Some(String::from("short effect")),
+                language: Some(NamedApiResource {
+                    name: Some(String::from("en")),
+                    url: None,
+                }),
+            }]),
+            damage_class: Some(NamedApiResource {
+                name: Some(String::from("special")),
+                url: None,
+            }),
+        }
+    }
+
+    #[test]
+    fn pokemon_move_get_renderable_version_group_details() {
+        let pokemon_move = get_stub_pokemon_move();
+        let pokemon_move_version_details = pokemon_move
+            .get_renderable_version_group_details("x-y")
+            .unwrap();
+
+        assert_eq!(pokemon_move_version_details.len(), 1);
+        assert_eq!(
+            pokemon_move_version_details
+                .first()
+                .unwrap()
+                .level_learned_at
+                .unwrap(),
+            pokemon_move
+                .version_group_details
+                .as_ref()
+                .unwrap()
+                .first()
+                .unwrap()
+                .level_learned_at
+                .unwrap()
+        )
+    }
+
+    #[test]
+    fn pokemon_move_get_renderable_as_row() {
+        let pokemon_move = get_stub_pokemon_move();
+        let pokemon_move_ext = get_stub_pokemon_move_ext();
+        let pokemon_move_version = get_stub_pokemon_move_version();
+
+        assert_eq!(
+            pokemon_move.get_renderable_as_row(Some(&pokemon_move_ext), &pokemon_move_version),
+            Some(Row::new(vec![
+                Span::styled("\u{A0}Pound", Style::default().fg(Color::Blue)),
+                Span::raw("100"),
+                Span::raw("20"),
+                Span::raw("60"),
+                Span::styled("Normal ", Style::default().fg(Color::Rgb(170, 170, 153))),
+                Span::raw("Special"),
+                Span::raw("Level up"),
+                Span::raw("25"),
+                Span::raw("short effect"),
+            ])),
+        );
+        assert_eq!(
+            pokemon_move.get_renderable_as_row(None, &pokemon_move_version),
+            None
+        );
+    }
+
+    #[test]
+    fn pokemon_move_ext_get_renderable_name() {
+        let pokemon_move_ext = get_stub_pokemon_move_ext();
+        assert_eq!(
+            pokemon_move_ext.get_renderable_name(),
+            String::from("\u{A0}Pound")
+        )
+    }
+
+    #[test]
+    fn pokemon_move_ext_get_renderable_pp() {
+        let pokemon_move_ext = get_stub_pokemon_move_ext();
+        assert_eq!(pokemon_move_ext.get_renderable_pp(), String::from("20"))
+    }
+
+    #[test]
+    fn pokemon_move_ext_get_renderable_accuracy() {
+        let pokemon_move_ext = get_stub_pokemon_move_ext();
+        assert_eq!(
+            pokemon_move_ext.get_renderable_accuracy(),
+            String::from("100")
+        )
+    }
+
+    #[test]
+    fn pokemon_move_ext_get_renderable_power() {
+        let pokemon_move_ext = get_stub_pokemon_move_ext();
+        assert_eq!(pokemon_move_ext.get_renderable_power(), String::from("60"))
+    }
+
+    #[test]
+    fn pokemon_move_ext_get_renderable_type() {
+        let pokemon_move_ext = get_stub_pokemon_move_ext();
+        assert_eq!(
+            pokemon_move_ext.get_renderable_type(),
+            String::from("normal")
+        )
+    }
+
+    #[test]
+    fn pokemon_move_ext_get_renderable_damage_class() {
+        let pokemon_move_ext = get_stub_pokemon_move_ext();
+        assert_eq!(
+            pokemon_move_ext.get_renderable_damage_class(),
+            String::from("Special")
+        )
+    }
+
+    #[test]
+    fn pokemon_move_ext_get_renderable_effect_entry() {
+        let pokemon_move_ext = get_stub_pokemon_move_ext();
+        assert_eq!(
+            pokemon_move_ext.get_renderable_effect_entry(),
+            String::from("short effect")
+        )
+    }
+
+    #[test]
+    fn pokemon_move_version_get_renderable_level() {
+        let pokemon_move_version = get_stub_pokemon_move_version();
+        assert_eq!(
+            pokemon_move_version.get_renderable_level(),
+            String::from("25")
+        )
+    }
+
+    #[test]
+    fn pokemon_move_version_get_renderable_learn_method() {
+        let pokemon_move_version = get_stub_pokemon_move_version();
+        assert_eq!(
+            pokemon_move_version.get_renderable_learn_method(),
+            String::from("Level up")
+        )
+    }
+}
