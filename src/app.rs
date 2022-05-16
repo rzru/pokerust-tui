@@ -19,17 +19,6 @@ pub enum SelectedPart {
 pub enum CurrentMainPageState {
     BasicInfo,
     VersionGroupSelection,
-    Abilities,
-}
-
-impl CurrentMainPageState {
-    pub fn get_next(&self) -> Self {
-        match self {
-            Self::VersionGroupSelection => Self::BasicInfo,
-            Self::BasicInfo => Self::Abilities,
-            Self::Abilities => Self::BasicInfo,
-        }
-    }
 }
 
 pub struct App {
@@ -40,7 +29,7 @@ pub struct App {
     pub selected_part: SelectedPart,
     pub version_groups: TestStatefulList,
     pub current_pokemon: Option<ExtendedPokemonInfo>,
-    pub selected_version: Option<NamedApiResource>,
+    pub selected_version_group: Option<NamedApiResource>,
     pub rendered_moves_count: Option<usize>,
     pub current_main_page_state: CurrentMainPageState,
     pub pokemon_moves_list_state: SwitchableTableState,
@@ -56,7 +45,7 @@ impl App {
             selected_part: SelectedPart::List,
             version_groups: StatefulList::with_items(vec![]),
             current_pokemon: None,
-            selected_version: None,
+            selected_version_group: None,
             rendered_moves_count: None,
             current_main_page_state: CurrentMainPageState::VersionGroupSelection,
             pokemon_moves_list_state: SwitchableTableState::new(),
@@ -164,7 +153,7 @@ impl App {
         self.current_pokemon = None;
         self.current_main_page_state = CurrentMainPageState::VersionGroupSelection;
         self.selected_part = SelectedPart::List;
-        self.selected_version = None;
+        self.selected_version_group = None;
     }
 
     pub fn filter_list(&mut self) {
@@ -205,10 +194,12 @@ impl App {
     }
 
     pub fn on_version_group_selected(&mut self) {
-        self.selected_version = self
+        self.selected_version_group = self
             .version_groups
             .get_selected()
             .and_then(|t| Some(t.clone()));
+
+        self.current_main_page_state = CurrentMainPageState::BasicInfo;
     }
 
     pub async fn on_moves_and_abilities_open<F>(&mut self, redraw: F)
@@ -225,10 +216,6 @@ impl App {
                 self.loading = false;
             }
         }
-    }
-
-    pub fn switch_main_page_state(&mut self) {
-        self.current_main_page_state = self.current_main_page_state.get_next();
     }
 
     pub fn on_search_append(&mut self, character: char) {

@@ -70,25 +70,23 @@ async fn run_app(
                     KeyCode::Down => match app.selected_part {
                         SelectedPart::List => app.pokemon_list.next(),
                         SelectedPart::Main => match app.current_main_page_state {
-                            CurrentMainPageState::Abilities => {
+                            CurrentMainPageState::BasicInfo => {
                                 app.pokemon_moves_list_state.next(app.rendered_moves_count)
                             }
                             CurrentMainPageState::VersionGroupSelection => {
                                 app.version_groups.next()
                             }
-                            _ => {}
                         },
                     },
                     KeyCode::Up => match app.selected_part {
                         SelectedPart::List => app.pokemon_list.previous(),
                         SelectedPart::Main => match app.current_main_page_state {
-                            CurrentMainPageState::Abilities => app
+                            CurrentMainPageState::BasicInfo => app
                                 .pokemon_moves_list_state
                                 .previous(app.rendered_moves_count),
                             CurrentMainPageState::VersionGroupSelection => {
                                 app.version_groups.previous()
                             }
-                            _ => {}
                         },
                     },
                     KeyCode::Left => match app.selected_part {
@@ -106,21 +104,16 @@ async fn run_app(
                             })
                             .await;
                         }
-                        SelectedPart::Main => {
-                            match app.current_main_page_state {
-                                CurrentMainPageState::VersionGroupSelection => {
-                                    app.on_version_group_selected();
-                                }
-                                CurrentMainPageState::BasicInfo => {
-                                    app.on_moves_and_abilities_open(|app| {
-                                        terminal.draw(|frame| render(frame, app)).unwrap();
-                                    })
-                                    .await;
-                                }
-                                _ => {}
+                        SelectedPart::Main => match app.current_main_page_state {
+                            CurrentMainPageState::VersionGroupSelection => {
+                                app.on_version_group_selected();
+                                app.on_moves_and_abilities_open(|app| {
+                                    terminal.draw(|frame| render(frame, app)).unwrap();
+                                })
+                                .await;
                             }
-                            app.switch_main_page_state();
-                        }
+                            _ => {}
+                        },
                     },
                     KeyCode::Char(c) => match app.selected_part {
                         SelectedPart::List => {

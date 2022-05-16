@@ -100,14 +100,14 @@ impl Pokemon {
             .unwrap_or(vec![])
     }
 
-    pub fn get_renderable_held_items(&self) -> Vec<Row> {
+    pub fn get_renderable_held_items(&self, selected_version: &str) -> Vec<Row> {
         self.held_items
             .as_ref()
             .and_then(|held_items| {
                 let mut prepared_held_items: Vec<Row> = vec![];
 
                 held_items.iter().for_each(|held_item| {
-                    prepared_held_items.extend(held_item.get_renderable_as_rows())
+                    prepared_held_items.extend(held_item.get_renderable_as_rows(selected_version))
                 });
 
                 Some(prepared_held_items)
@@ -150,7 +150,7 @@ mod tests {
                 version_details: Some(vec![PokemonHeldItemVersion {
                     rarity: Some(20),
                     version: Some(NamedApiResource {
-                        name: Some(String::from("x-y")),
+                        name: Some(String::from("x")),
                         url: None,
                     }),
                 }]),
@@ -241,11 +241,11 @@ mod tests {
     fn pokemon_get_renderable_held_items() {
         let pokemon = get_stub_pokemon();
         assert_eq!(
-            pokemon.get_renderable_held_items(),
+            pokemon.get_renderable_held_items("x-y"),
             vec![Row::new(vec![
                 Span::styled("\u{A0}Sharp fang", Style::default().fg(Color::Blue)),
-                Span::raw("20"),
-                Span::raw("X Y"),
+                Span::raw("20%"),
+                Span::raw("X"),
             ]),]
         )
     }

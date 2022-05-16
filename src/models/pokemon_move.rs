@@ -19,7 +19,7 @@ pub struct PokemonMove {
 impl PokemonMove {
     pub fn get_renderable_version_group_details(
         &self,
-        selected_version: &str,
+        selected_version_group: &str,
     ) -> Option<Vec<&PokemonMoveVersion>> {
         self.version_group_details
             .as_ref()
@@ -28,7 +28,7 @@ impl PokemonMove {
                     .iter()
                     .filter_map(|version_group_detail| {
                         if let Some(version_group) = version_group_detail.version_group.as_ref() {
-                            if version_group.get_name_or_stub() == selected_version {
+                            if version_group.get_name_or_stub() == selected_version_group {
                                 return Some(version_group_detail);
                             }
                         }

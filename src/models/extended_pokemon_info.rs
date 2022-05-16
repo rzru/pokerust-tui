@@ -98,7 +98,7 @@ impl ExtendedPokemonInfo {
         ]
     }
 
-    pub fn get_renderable_moves(&self, selected_version: &str) -> Vec<Row> {
+    pub fn get_renderable_moves(&self, selected_version_group: &str) -> Vec<Row> {
         let mut prepared_moves = self
             .pokemon
             .moves
@@ -109,7 +109,7 @@ impl ExtendedPokemonInfo {
                         .iter()
                         .filter_map(|pokemon_move| {
                             pokemon_move
-                                .get_renderable_version_group_details(selected_version)
+                                .get_renderable_version_group_details(selected_version_group)
                                 .and_then(|version_group_details| {
                                     if version_group_details.is_empty() {
                                         return None;

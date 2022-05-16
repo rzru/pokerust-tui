@@ -21,9 +21,10 @@ type CrosstermFrame<'a> = Frame<'a, CrosstermBackend<Stdout>>;
 pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
     let (list_area, search_area, main_area) = prepare_chunks(frame);
     let version_group_selection_area = prepare_version_group_selection_area(main_area);
-    let (basic_info_area, held_items_area) = prepare_main_block_chunks(main_area);
-    let (abilities_area, moves_area) = prepare_main_block_second_page_chunks(main_area);
-    let (basic_info_area, pokemon_stats_area, pokedex_numbers_area) =
+    let (basic_info_area, abilities_and_moves_area) = prepare_main_block_chunks(main_area);
+    let (abilities_area, moves_area) =
+        prepare_main_block_abilities_and_moves_chunks(abilities_and_moves_area);
+    let (basic_info_area, pokemon_stats_area, held_items_area, pokedex_numbers_area) =
         prepare_basic_info_chunks(basic_info_area);
     let (list_style, main_style) = get_styles(app);
 
@@ -40,37 +41,41 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
             CurrentMainPageState::BasicInfo => {
                 let basic_info_table = get_renderable_basic_info_table(current_pokemon);
                 let pokemon_stats_table = get_renderable_pokemon_stats_table(current_pokemon);
-                let pokemon_held_items_table =
-                    get_renderable_pokemon_held_items_table(current_pokemon);
-                let pokedex_numbers_table = get_renderable_pokedex_numbers_table(current_pokemon);
-
-                frame.render_widget(basic_info_table, basic_info_area);
-                frame.render_widget(pokemon_stats_table, pokemon_stats_area);
-                frame.render_widget(pokedex_numbers_table, pokedex_numbers_area);
-                frame.render_widget(pokemon_held_items_table, held_items_area);
-            }
-            CurrentMainPageState::VersionGroupSelection => {
-                render_version_groups_selection_list(frame, app, version_group_selection_area)
-            }
-            CurrentMainPageState::Abilities => {
-                let abilities_table = get_renderable_pokemon_abilities_table(current_pokemon);
-                let (moves_table, moves_count) = get_renderable_pokemon_moves_table(
+                let pokemon_held_items_table = get_renderable_pokemon_held_items_table(
                     current_pokemon,
-                    app.selected_version
+                    app.selected_version_group
                         .as_ref()
                         .unwrap()
                         .name
                         .as_ref()
                         .unwrap(),
                 );
-
+                let pokedex_numbers_table = get_renderable_pokedex_numbers_table(current_pokemon);
+                let abilities_table = get_renderable_pokemon_abilities_table(current_pokemon);
+                let (moves_table, moves_count) = get_renderable_pokemon_moves_table(
+                    current_pokemon,
+                    app.selected_version_group
+                        .as_ref()
+                        .unwrap()
+                        .name
+                        .as_ref()
+                        .unwrap(),
+                );
                 app.rendered_moves_count = Some(moves_count);
+
+                frame.render_widget(basic_info_table, basic_info_area);
+                frame.render_widget(pokemon_stats_table, pokemon_stats_area);
+                frame.render_widget(pokedex_numbers_table, pokedex_numbers_area);
+                frame.render_widget(pokemon_held_items_table, held_items_area);
                 frame.render_widget(abilities_table, abilities_area);
                 frame.render_stateful_widget(
                     moves_table,
                     moves_area,
                     &mut app.pokemon_moves_list_state.0,
                 );
+            }
+            CurrentMainPageState::VersionGroupSelection => {
+                render_version_groups_selection_list(frame, app, version_group_selection_area)
             }
         }
     }
@@ -93,7 +98,7 @@ fn prepare_chunks(frame: &CrosstermFrame) -> (Rect, Rect, Rect) {
 
 fn prepare_main_block_chunks(area: Rect) -> (Rect, Rect) {
     let main_block_chunks = Layout::default()
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+        .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
         .margin(1)
         .direction(Direction::Horizontal)
         .split(area);
@@ -101,10 +106,9 @@ fn prepare_main_block_chunks(area: Rect) -> (Rect, Rect) {
     (main_block_chunks[0], main_block_chunks[1])
 }
 
-fn prepare_main_block_second_page_chunks(area: Rect) -> (Rect, Rect) {
+fn prepare_main_block_abilities_and_moves_chunks(area: Rect) -> (Rect, Rect) {
     let main_block_chunks = Layout::default()
         .constraints([Constraint::Length(6), Constraint::Percentage(90)].as_ref())
-        .margin(1)
         .direction(Direction::Vertical)
         .split(area);
 
@@ -121,12 +125,13 @@ fn prepare_version_group_selection_area(area: Rect) -> Rect {
     main_block_chunks[0]
 }
 
-fn prepare_basic_info_chunks(area: Rect) -> (Rect, Rect, Rect) {
+fn prepare_basic_info_chunks(area: Rect) -> (Rect, Rect, Rect, Rect) {
     let left_block_chunks = Layout::default()
         .constraints(
             [
                 Constraint::Length(13),
                 Constraint::Length(8),
+                Constraint::Length(7),
                 Constraint::Percentage(90),
             ]
             .as_ref(),
@@ -137,6 +142,7 @@ fn prepare_basic_info_chunks(area: Rect) -> (Rect, Rect, Rect) {
         left_block_chunks[0],
         left_block_chunks[1],
         left_block_chunks[2],
+        left_block_chunks[3],
     )
 }
 
@@ -154,10 +160,14 @@ fn render_version_groups_selection_list(frame: &mut CrosstermFrame, app: &mut Ap
         .collect();
 
     let list = List::new(version_groups_to_render)
-        .block(Block::default().title(Span::styled(
-            "\u{A0}\u{A0}Select generation",
-            Style::default().add_modifier(Modifier::BOLD),
-        )))
+        .block(
+            Block::default().title(Span::styled(
+                String::from("Select generation")
+                    .append_padding()
+                    .append_padding(),
+                Style::default().add_modifier(Modifier::BOLD),
+            )),
+        )
         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
         .highlight_symbol("> ");
 
@@ -241,7 +251,7 @@ fn get_renderable_pokemon_stats_table(current_pokemon: &ExtendedPokemonInfo) -> 
             "\u{A0}Base Stats",
             Style::default().add_modifier(Modifier::BOLD),
         ))))
-        .widths(&[Constraint::Percentage(40), Constraint::Percentage(60)])
+        .widths(&[Constraint::Percentage(60), Constraint::Percentage(40)])
         .column_spacing(1)
 }
 
@@ -251,26 +261,29 @@ fn get_renderable_basic_info_table(current_pokemon: &ExtendedPokemonInfo) -> Tab
             "\u{A0}Basic Info",
             Style::default().add_modifier(Modifier::BOLD),
         ))))
-        .widths(&[Constraint::Percentage(40), Constraint::Percentage(60)])
+        .widths(&[Constraint::Percentage(60), Constraint::Percentage(40)])
         .column_spacing(1)
 }
 
-fn get_renderable_pokemon_held_items_table(current_pokemon: &ExtendedPokemonInfo) -> Table {
-    Table::new(current_pokemon.pokemon.get_renderable_held_items())
-        .header(
-            Row::new(vec!["\u{A0}Name", "Rarity", "Game Version"])
-                .style(Style::default().fg(Color::Blue)),
-        )
-        .block(Block::default().title(Spans::from(Span::styled(
-            "\u{A0}Held items",
-            Style::default().add_modifier(Modifier::BOLD),
-        ))))
-        .widths(&[
-            Constraint::Percentage(33),
-            Constraint::Percentage(33),
-            Constraint::Percentage(33),
-        ])
-        .column_spacing(1)
+fn get_renderable_pokemon_held_items_table<'a>(
+    current_pokemon: &'a ExtendedPokemonInfo,
+    selected_version_group: &str,
+) -> Table<'a> {
+    Table::new(
+        current_pokemon
+            .pokemon
+            .get_renderable_held_items(selected_version_group),
+    )
+    .block(Block::default().title(Spans::from(Span::styled(
+        "\u{A0}Held items",
+        Style::default().add_modifier(Modifier::BOLD),
+    ))))
+    .widths(&[
+        Constraint::Length(14),
+        Constraint::Length(6),
+        Constraint::Percentage(100),
+    ])
+    .column_spacing(1)
 }
 
 fn get_renderable_pokemon_abilities_table(current_pokemon: &ExtendedPokemonInfo) -> Table {
@@ -293,21 +306,21 @@ fn get_renderable_pokemon_abilities_table(current_pokemon: &ExtendedPokemonInfo)
 
 fn get_renderable_pokemon_moves_table<'a>(
     current_pokemon: &'a ExtendedPokemonInfo,
-    selected_version: &str,
+    selected_version_group: &str,
 ) -> (Table<'a>, usize) {
-    let moves = current_pokemon.get_renderable_moves(selected_version);
+    let moves = current_pokemon.get_renderable_moves(selected_version_group);
     let moves_len = &moves.len();
     let table = Table::new(moves)
         .header(
             Row::new(vec![
                 "\u{A0}Name",
-                "Accuracy",
+                "Acc.",
                 "PP",
-                "Power",
+                "Pow.",
                 "Type",
-                "Damage Class",
-                "Learning method",
-                "Level",
+                "Class",
+                "Method",
+                "Lv.",
                 "Effect",
             ])
             .style(Style::default().fg(Color::Blue)),
@@ -317,18 +330,18 @@ fn get_renderable_pokemon_moves_table<'a>(
             Style::default().add_modifier(Modifier::BOLD),
         ))))
         .widths(&[
-            Constraint::Percentage(10),
-            Constraint::Percentage(5),
-            Constraint::Percentage(4),
-            Constraint::Percentage(5),
-            Constraint::Percentage(8),
-            Constraint::Percentage(8),
-            Constraint::Percentage(10),
-            Constraint::Percentage(5),
-            Constraint::Percentage(50),
+            Constraint::Length(16),
+            Constraint::Length(5),
+            Constraint::Length(3),
+            Constraint::Length(5),
+            Constraint::Length(9),
+            Constraint::Length(9),
+            Constraint::Length(9),
+            Constraint::Length(4),
+            Constraint::Percentage(100),
         ])
-        .column_spacing(1)
-        .highlight_style(Style::default().add_modifier(Modifier::REVERSED));
+        .highlight_style(Style::default().add_modifier(Modifier::REVERSED))
+        .column_spacing(1);
 
     (table, *moves_len)
 }
@@ -339,7 +352,7 @@ fn get_renderable_pokedex_numbers_table(current_pokemon: &ExtendedPokemonInfo) -
             "\u{A0}Pokedex Numbers",
             Style::default().add_modifier(Modifier::BOLD),
         ))))
-        .widths(&[Constraint::Percentage(40), Constraint::Percentage(60)])
+        .widths(&[Constraint::Percentage(60), Constraint::Percentage(40)])
         .column_spacing(1)
 }
 
