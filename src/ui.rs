@@ -131,7 +131,7 @@ fn prepare_basic_info_chunks(area: Rect) -> (Rect, Rect, Rect, Rect) {
             [
                 Constraint::Length(13),
                 Constraint::Length(8),
-                Constraint::Length(7),
+                Constraint::Length(8),
                 Constraint::Percentage(90),
             ]
             .as_ref(),
@@ -362,8 +362,9 @@ fn get_main_block_text<'a>(frame: &CrosstermFrame, app: &App) -> Vec<Spans<'a>> 
     let welcoming_text = vec![
         Spans::from("Hello! Welcome to Pokerust."),
         Spans::from("\n"),
-        Spans::from("Use \"Up\" and \"Down\" arrows to navigate through Pokemon list."),
+        Spans::from("Use \"Up\" and \"Down\" to navigate through Pokemon/Moves list."),
         Spans::from("Press \"Enter\" to see information about needed Pokemon."),
+        Spans::from("Use \"Left\" and \"Right\" switch between Pokemon list and Pokemon Info."),
         Spans::from("Press \"Esc\" to leave information screen."),
         Spans::from("Press \"q\" to leave Pokedex."),
     ];
