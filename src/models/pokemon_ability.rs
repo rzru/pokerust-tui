@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 use tui::{text::Span, widgets::Row};
 
-use crate::utils::PreparePokemonNameForDisplay;
+use crate::utils::PrepareForDisplay;
 
-use super::{FlavorTextEntry, NamedApiResource};
+use super::{FlavorTextEntry, NamedApiResource, VerboseEffect};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PokemonAbility {
@@ -15,9 +15,9 @@ pub struct PokemonAbility {
 impl PokemonAbility {
     pub fn get_renderable_is_hidden(&self) -> Span {
         Span::raw(if self.is_hidden.unwrap_or(false) {
-            "\u{A0}Yes"
+            "Yes"
         } else {
-            "\u{A0}No"
+            "No"
         })
     }
 
@@ -27,9 +27,9 @@ impl PokemonAbility {
     ) -> Option<Row> {
         if let Some(ability) = extended_ability {
             return Some(Row::new(vec![
-                self.get_renderable_is_hidden(),
                 Span::raw(ability.get_renderable_name()),
                 Span::raw(ability.get_renderable_effect_entry()),
+                self.get_renderable_is_hidden(),
             ]));
         }
 
@@ -49,7 +49,7 @@ impl PokemonAbilityExt {
     pub fn get_renderable_name(&self) -> String {
         self.name
             .as_ref()
-            .and_then(|name| Some(name.to_string().split_capitalize()))
+            .and_then(|name| Some(name.to_string().split_capitalize().append_padding()))
             .unwrap_or(String::new())
     }
 
@@ -73,30 +73,6 @@ impl PokemonAbilityExt {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct VerboseEffect {
-    pub effect: Option<String>,
-    pub short_effect: Option<String>,
-    pub language: Option<NamedApiResource>,
-}
-
-impl VerboseEffect {
-    pub fn get_language(&self) -> String {
-        self.language
-            .as_ref()
-            .and_then(|language| language.name.as_ref())
-            .and_then(|language| Some(language.to_string()))
-            .unwrap_or(String::new())
-    }
-
-    pub fn get_effect(&self) -> String {
-        self.short_effect
-            .as_ref()
-            .unwrap_or(&"".to_string())
-            .to_string()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use tui::{text::Span, widgets::Row};
@@ -104,17 +80,6 @@ mod tests {
     use crate::models::NamedApiResource;
 
     use super::{PokemonAbility, PokemonAbilityExt, VerboseEffect};
-
-    fn get_stub_verbose_effect() -> VerboseEffect {
-        VerboseEffect {
-            effect: Some(String::from("effect")),
-            short_effect: Some(String::from("short effect")),
-            language: Some(NamedApiResource {
-                name: Some(String::from("en")),
-                url: None,
-            }),
-        }
-    }
 
     fn get_stub_pokemon_ability(is_hidden: bool) -> PokemonAbility {
         PokemonAbility {
@@ -131,7 +96,14 @@ mod tests {
         PokemonAbilityExt {
             id: Some(1),
             name: Some(String::from("test")),
-            effect_entries: Some(vec![get_stub_verbose_effect()]),
+            effect_entries: Some(vec![VerboseEffect {
+                effect: Some(String::from("effect")),
+                short_effect: Some(String::from("short effect")),
+                language: Some(NamedApiResource {
+                    name: Some(String::from("en")),
+                    url: None,
+                }),
+            }]),
             flavor_text_entries: None,
         }
     }
@@ -157,9 +129,9 @@ mod tests {
         let extended_pokemon_info = get_stub_pokemon_ability_ext();
         assert_eq!(
             Some(Row::new(vec![
+                Span::raw("\u{A0}Test"),
+                Span::raw("short effect"),
                 Span::raw("No"),
-                Span::raw("Test"),
-                Span::raw("effect")
             ])),
             get_stub_pokemon_ability(false).get_renderable_as_row(Some(&extended_pokemon_info))
         )
@@ -168,7 +140,7 @@ mod tests {
     #[test]
     fn pokemon_ability_ext_get_renderable_name() {
         assert_eq!(
-            String::from("Test"),
+            String::from("\u{A0}Test"),
             get_stub_pokemon_ability_ext().get_renderable_name()
         )
     }
@@ -176,21 +148,8 @@ mod tests {
     #[test]
     fn pokemon_ability_ext_get_renderable_effect_entry() {
         assert_eq!(
-            String::from("effect"),
+            String::from("short effect"),
             get_stub_pokemon_ability_ext().get_renderable_effect_entry()
         )
-    }
-
-    #[test]
-    fn verbose_effect_get_effect() {
-        assert_eq!(
-            String::from("effect"),
-            get_stub_verbose_effect().get_effect()
-        )
-    }
-
-    #[test]
-    fn verbose_effect_get_language() {
-        assert_eq!(String::from("en"), get_stub_verbose_effect().get_language())
     }
 }

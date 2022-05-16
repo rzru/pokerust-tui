@@ -5,7 +5,7 @@ use tui::{
     widgets::Row,
 };
 
-use crate::utils::PreparePokemonNameForDisplay;
+use crate::utils::PrepareForDisplay;
 
 use super::NamedApiResource;
 
@@ -22,12 +22,7 @@ impl PokemonStat {
             .stat
             .as_ref()
             .and_then(|stat| stat.name.as_ref())
-            .and_then(|stat_name| {
-                Some(format!(
-                    "\u{A0}{}",
-                    stat_name.to_string().split_capitalize()
-                ))
-            })
+            .and_then(|stat_name| Some(stat_name.to_string().split_capitalize().append_padding()))
             .unwrap_or(String::new());
 
         let base_value = self

@@ -2,6 +2,7 @@ mod app;
 mod http;
 mod models;
 mod stateful_list;
+pub mod switchable_table_state;
 mod ui;
 mod utils;
 
@@ -10,17 +11,17 @@ use std::{
     time::Duration,
 };
 
-use app::App;
+use app::{App, CurrentMainPageState, SelectedPart};
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use models::SelectedPart;
 use tui::{backend::CrosstermBackend, Terminal};
 use ui::render;
 
 const POKEAPI_DEFAULT_URL: &str = "https://pokeapi.co/api/v2/";
+const DEFAULT_LIST_QUERY_PARAMS: &str = "?limit=100000&offset=0";
 
 #[tokio::main]
 async fn main() -> Result<(), io::Error> {
@@ -56,7 +57,7 @@ async fn run_app(
 ) -> io::Result<()> {
     let tick_rate = Duration::from_millis(250);
 
-    app.fetch_pokemon_list().await;
+    app.init().await;
 
     loop {
         terminal.draw(|frame| render(frame, &mut app))?;
@@ -65,59 +66,67 @@ async fn run_app(
             if let Event::Key(key) = event::read()? {
                 match key.code {
                     KeyCode::Char('q') => return Ok(()),
-                    KeyCode::Esc => {
-                        app.reset_current_pokemon();
-                        app.selected_part = SelectedPart::List;
-                    }
-                    KeyCode::Down => {
-                        if let SelectedPart::List = app.selected_part {
-                            app.pokemon_list.next()
-                        }
-                    }
-                    KeyCode::Up => {
-                        if let SelectedPart::List = app.selected_part {
-                            app.pokemon_list.previous()
-                        }
-                    }
-                    KeyCode::Left => {
-                        if let SelectedPart::Main = app.selected_part {
-                            app.selected_part = SelectedPart::List
-                        }
-                    }
-                    KeyCode::Right => {
-                        if let (SelectedPart::List, Some(_)) =
-                            (&app.selected_part, &app.current_pokemon)
-                        {
-                            app.selected_part = SelectedPart::Main
-                        }
-                    }
-                    KeyCode::Enter => {
-                        let pokemon = app.pokemon_list.get_selected().cloned();
-
-                        if let SelectedPart::List = app.selected_part {
-                            if let Some(pokemon) = pokemon {
-                                app.reset_current_pokemon();
-                                app.loading = true;
-                                terminal.draw(|frame| render(frame, &mut app))?;
-                                app.fetch_pokemon_with_info(&pokemon).await;
-                                app.loading = false;
+                    KeyCode::Esc => app.reset_current_pokemon(),
+                    KeyCode::Down => match app.selected_part {
+                        SelectedPart::List => app.pokemon_list.next(),
+                        SelectedPart::Main => match app.current_main_page_state {
+                            CurrentMainPageState::BasicInfo => {
+                                app.pokemon_moves_list_state.next(app.rendered_moves_count)
                             }
-                        } else {
-                            app.current_main_page_state = app.current_main_page_state.get_next();
+                            CurrentMainPageState::VersionGroupSelection => {
+                                app.version_groups.next()
+                            }
+                        },
+                    },
+                    KeyCode::Up => match app.selected_part {
+                        SelectedPart::List => app.pokemon_list.previous(),
+                        SelectedPart::Main => match app.current_main_page_state {
+                            CurrentMainPageState::BasicInfo => app
+                                .pokemon_moves_list_state
+                                .previous(app.rendered_moves_count),
+                            CurrentMainPageState::VersionGroupSelection => {
+                                app.version_groups.previous()
+                            }
+                        },
+                    },
+                    KeyCode::Left => match app.selected_part {
+                        SelectedPart::Main => app.selected_part = SelectedPart::List,
+                        _ => {}
+                    },
+                    KeyCode::Right => match (&app.selected_part, &app.current_pokemon) {
+                        (SelectedPart::List, Some(_)) => app.selected_part = SelectedPart::Main,
+                        _ => {}
+                    },
+                    KeyCode::Enter => match app.selected_part {
+                        SelectedPart::List => {
+                            app.on_pokemon_selected(|app| {
+                                terminal.draw(|frame| render(frame, app)).unwrap();
+                            })
+                            .await;
                         }
-                    }
-                    KeyCode::Char(c) => {
-                        if let SelectedPart::List = app.selected_part {
-                            app.search.push(c);
-                            app.filter_list();
+                        SelectedPart::Main => match app.current_main_page_state {
+                            CurrentMainPageState::VersionGroupSelection => {
+                                app.on_version_group_selected();
+                                app.on_moves_and_abilities_open(|app| {
+                                    terminal.draw(|frame| render(frame, app)).unwrap();
+                                })
+                                .await;
+                            }
+                            _ => {}
+                        },
+                    },
+                    KeyCode::Char(c) => match app.selected_part {
+                        SelectedPart::List => {
+                            app.on_search_append(c);
                         }
-                    }
-                    KeyCode::Backspace => {
-                        if let SelectedPart::List = app.selected_part {
-                            app.search.pop();
-                            app.filter_list();
+                        _ => {}
+                    },
+                    KeyCode::Backspace => match app.selected_part {
+                        SelectedPart::List => {
+                            app.on_search_remove();
                         }
-                    }
+                        _ => {}
+                    },
                     _ => {}
                 }
             }
