@@ -47,10 +47,6 @@ impl<T: Clone> StatefulList<T> {
         self.state.select(Some(i));
     }
 
-    // pub fn unselect(&mut self) {
-    //     self.state.select(None);
-    // }
-
     pub fn get_selected(&self) -> Option<&T> {
         let selected = self.state.selected();
 

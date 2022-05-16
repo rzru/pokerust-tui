@@ -23,11 +23,13 @@ impl Http {
 
     async fn get(&self, uri: &str) -> Option<Bytes> {
         if let Ok(uri) = uri.parse() {
-            let resp = self.client.get(uri).await.unwrap();
+            let resp = self.client.get(uri).await;
 
-            if resp.status() == StatusCode::OK {
-                if let Ok(result) = to_bytes(resp.into_body()).await {
-                    return Some(result);
+            if let Ok(resp) = resp {
+                if resp.status() == StatusCode::OK {
+                    if let Ok(result) = to_bytes(resp.into_body()).await {
+                        return Some(result);
+                    }
                 }
             }
         }
@@ -86,8 +88,10 @@ where
         let data = http.get(&url).await;
 
         if let Some(bytes) = data {
+            // TODO: replace unwrap with something better
             let fetched = serde_json::from_slice(&bytes).unwrap();
 
+            // TODO: replace unwrap with something better
             tx.send(fetched).await.unwrap();
         }
     });

@@ -33,16 +33,17 @@ impl CurrentMainPageState {
 }
 
 pub struct App {
-    pub pokemon_list: TestStatefulList,
     http: Http,
-    pub current_pokemon: Option<ExtendedPokemonInfo>,
     pub search: String,
-    pub selected_part: SelectedPart,
     pub loading: bool,
+    pub pokemon_list: TestStatefulList,
+    pub selected_part: SelectedPart,
+    pub version_groups: TestStatefulList,
+    pub current_pokemon: Option<ExtendedPokemonInfo>,
+    pub selected_version: Option<NamedApiResource>,
+    pub rendered_moves_count: Option<usize>,
     pub current_main_page_state: CurrentMainPageState,
     pub pokemon_moves_list_state: SwitchableTableState,
-    pub selected_version: Option<NamedApiResource>,
-    pub version_groups: TestStatefulList,
 }
 
 impl App {
@@ -56,9 +57,16 @@ impl App {
             version_groups: StatefulList::with_items(vec![]),
             current_pokemon: None,
             selected_version: None,
+            rendered_moves_count: None,
             current_main_page_state: CurrentMainPageState::VersionGroupSelection,
             pokemon_moves_list_state: SwitchableTableState::new(),
         }
+    }
+
+    pub async fn init(&mut self) {
+        let (pokemon_list, version_groups) =
+            join!(self.fetch_list("pokemon"), self.fetch_list("version-group"));
+        self.set_pokemon_list_and_version_groups(pokemon_list, version_groups);
     }
 
     pub async fn fetch_list(&self, list_name: &str) -> Vec<NamedApiResource> {
@@ -77,8 +85,13 @@ impl App {
         if let Some(current_pokemon) = self.current_pokemon.as_mut() {
             let empty_abilities = vec![];
             let empty_moves = vec![];
-            let fetch_url =
-                |api_resource: &NamedApiResource| api_resource.url.as_ref().unwrap().to_string();
+            let fetch_url = |api_resource: &NamedApiResource| {
+                api_resource
+                    .url
+                    .as_ref()
+                    .unwrap_or(&"".to_string())
+                    .to_string()
+            };
 
             let (abilities, moves) = (
                 current_pokemon
@@ -95,9 +108,11 @@ impl App {
 
             let (abilities, moves): (Vec<PokemonAbilityExt>, Vec<PokemonMoveExt>) = join!(
                 fetch_external(abilities.as_slice(), |ability| {
+                    // TODO: replace unwrap with something better
                     fetch_url(ability.ability.as_ref().unwrap())
                 }),
                 fetch_external(moves.as_slice(), |mv| {
+                    // TODO: replace unwrap with something better
                     fetch_url(mv.de_move.as_ref().unwrap())
                 }),
             );
@@ -108,7 +123,11 @@ impl App {
     }
 
     pub async fn fetch_pokemon_with_info(&mut self, pokemon: &NamedApiResource) {
-        let uri = pokemon.url.as_ref().unwrap().to_string();
+        let uri = pokemon.url.as_ref().unwrap_or(&"".to_string()).to_string();
+        if uri.is_empty() {
+            return;
+        }
+
         let pokemon: Option<Pokemon> = self.http.get_as_object(&uri).await;
 
         if let Some(pokemon) = pokemon {
@@ -155,9 +174,7 @@ impl App {
             .iter()
             .filter_map(|pokemon| {
                 let should_be_included = pokemon
-                    .name
-                    .as_ref()
-                    .unwrap()
+                    .get_name_or_stub()
                     .to_lowercase()
                     .contains(&self.search.to_lowercase());
 
@@ -170,5 +187,57 @@ impl App {
             .collect();
 
         self.pokemon_list.state.select(Some(0));
+    }
+
+    pub async fn on_pokemon_selected<F>(&mut self, redraw: F)
+    where
+        F: FnOnce(&mut Self),
+    {
+        let pokemon = self.pokemon_list.get_selected().cloned();
+        if let Some(pokemon) = pokemon {
+            self.reset_current_pokemon();
+            self.loading = true;
+            redraw(self);
+            self.fetch_pokemon_with_info(&pokemon).await;
+            self.loading = false;
+            self.selected_part = SelectedPart::Main;
+        }
+    }
+
+    pub fn on_version_group_selected(&mut self) {
+        self.selected_version = self
+            .version_groups
+            .get_selected()
+            .and_then(|t| Some(t.clone()));
+    }
+
+    pub async fn on_moves_and_abilities_open<F>(&mut self, redraw: F)
+    where
+        F: FnOnce(&mut Self),
+    {
+        self.pokemon_moves_list_state = SwitchableTableState::new();
+        if let Some(current_pokemon) = self.current_pokemon.as_ref() {
+            if current_pokemon.abilities.is_empty() && current_pokemon.moves.is_empty() {
+                self.loading = true;
+                self.rendered_moves_count = None;
+                redraw(self);
+                self.fetch_abilities_and_moves().await;
+                self.loading = false;
+            }
+        }
+    }
+
+    pub fn switch_main_page_state(&mut self) {
+        self.current_main_page_state = self.current_main_page_state.get_next();
+    }
+
+    pub fn on_search_append(&mut self, character: char) {
+        self.search.push(character);
+        self.filter_list();
+    }
+
+    pub fn on_search_remove(&mut self) {
+        self.search.pop();
+        self.filter_list();
     }
 }

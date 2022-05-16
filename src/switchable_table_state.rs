@@ -7,10 +7,10 @@ impl SwitchableTableState {
         Self(TableState::default())
     }
 
-    pub fn next<T>(&mut self, items: &Vec<T>) {
+    pub fn next(&mut self, items_count: Option<usize>) {
         self.0.select(Some(match self.0.selected() {
             Some(i) => {
-                if i >= items.len() - 1 {
+                if i >= items_count.unwrap_or(0) - 1 {
                     0
                 } else {
                     i + 1
@@ -20,13 +20,13 @@ impl SwitchableTableState {
         }))
     }
 
-    pub fn previous<T>(&mut self, items: &Vec<T>) {
+    pub fn previous(&mut self, items_count: Option<usize>) {
         self.0.select(Some(match self.0.selected() {
             Some(i) => {
                 if i != 0 {
                     i - 1
                 } else {
-                    items.len() - 1
+                    items_count.unwrap_or(0) - 1
                 }
             }
             None => 0,

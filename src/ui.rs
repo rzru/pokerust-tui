@@ -54,7 +54,7 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
             }
             CurrentMainPageState::Abilities => {
                 let abilities_table = get_renderable_pokemon_abilities_table(current_pokemon);
-                let moves_table = get_renderable_pokemon_moves_table(
+                let (moves_table, moves_count) = get_renderable_pokemon_moves_table(
                     current_pokemon,
                     app.selected_version
                         .as_ref()
@@ -64,6 +64,7 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
                         .unwrap(),
                 );
 
+                app.rendered_moves_count = Some(moves_count);
                 frame.render_widget(abilities_table, abilities_area);
                 frame.render_stateful_widget(
                     moves_table,
@@ -293,8 +294,10 @@ fn get_renderable_pokemon_abilities_table(current_pokemon: &ExtendedPokemonInfo)
 fn get_renderable_pokemon_moves_table<'a>(
     current_pokemon: &'a ExtendedPokemonInfo,
     selected_version: &str,
-) -> Table<'a> {
-    Table::new(current_pokemon.get_renderable_moves(selected_version))
+) -> (Table<'a>, usize) {
+    let moves = current_pokemon.get_renderable_moves(selected_version);
+    let moves_len = &moves.len();
+    let table = Table::new(moves)
         .header(
             Row::new(vec![
                 "\u{A0}Name",
@@ -325,7 +328,9 @@ fn get_renderable_pokemon_moves_table<'a>(
             Constraint::Percentage(50),
         ])
         .column_spacing(1)
-        .highlight_style(Style::default().add_modifier(Modifier::REVERSED))
+        .highlight_style(Style::default().add_modifier(Modifier::REVERSED));
+
+    (table, *moves_len)
 }
 
 fn get_renderable_pokedex_numbers_table(current_pokemon: &ExtendedPokemonInfo) -> Table {

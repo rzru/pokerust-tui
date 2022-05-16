@@ -17,8 +17,6 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use switchable_table_state::SwitchableTableState;
-use tokio::join;
 use tui::{backend::CrosstermBackend, Terminal};
 use ui::render;
 
@@ -59,9 +57,8 @@ async fn run_app(
 ) -> io::Result<()> {
     let tick_rate = Duration::from_millis(250);
 
-    let (pokemon_list, version_groups) =
-        join!(app.fetch_list("pokemon"), app.fetch_list("version-group"));
-    app.set_pokemon_list_and_version_groups(pokemon_list, version_groups);
+    app.init().await;
+
     loop {
         terminal.draw(|frame| render(frame, &mut app))?;
 
@@ -73,16 +70,9 @@ async fn run_app(
                     KeyCode::Down => match app.selected_part {
                         SelectedPart::List => app.pokemon_list.next(),
                         SelectedPart::Main => match app.current_main_page_state {
-                            CurrentMainPageState::Abilities => app.pokemon_moves_list_state.next(
-                                &app.current_pokemon.as_ref().unwrap().get_prepared_moves(
-                                    app.selected_version
-                                        .as_ref()
-                                        .unwrap()
-                                        .name
-                                        .as_ref()
-                                        .unwrap(),
-                                ),
-                            ),
+                            CurrentMainPageState::Abilities => {
+                                app.pokemon_moves_list_state.next(app.rendered_moves_count)
+                            }
                             CurrentMainPageState::VersionGroupSelection => {
                                 app.version_groups.next()
                             }
@@ -92,18 +82,9 @@ async fn run_app(
                     KeyCode::Up => match app.selected_part {
                         SelectedPart::List => app.pokemon_list.previous(),
                         SelectedPart::Main => match app.current_main_page_state {
-                            CurrentMainPageState::Abilities => {
-                                app.pokemon_moves_list_state.previous(
-                                    &app.current_pokemon.as_ref().unwrap().get_prepared_moves(
-                                        app.selected_version
-                                            .as_ref()
-                                            .unwrap()
-                                            .name
-                                            .as_ref()
-                                            .unwrap(),
-                                    ),
-                                )
-                            }
+                            CurrentMainPageState::Abilities => app
+                                .pokemon_moves_list_state
+                                .previous(app.rendered_moves_count),
                             CurrentMainPageState::VersionGroupSelection => {
                                 app.version_groups.previous()
                             }
@@ -120,53 +101,36 @@ async fn run_app(
                     },
                     KeyCode::Enter => match app.selected_part {
                         SelectedPart::List => {
-                            let pokemon = app.pokemon_list.get_selected().cloned();
-                            if let Some(pokemon) = pokemon {
-                                app.reset_current_pokemon();
-                                app.loading = true;
-                                terminal.draw(|frame| render(frame, &mut app))?;
-                                app.fetch_pokemon_with_info(&pokemon).await;
-                                app.loading = false;
-                                app.selected_part = SelectedPart::Main;
-                            }
+                            app.on_pokemon_selected(|app| {
+                                terminal.draw(|frame| render(frame, app)).unwrap();
+                            })
+                            .await;
                         }
                         SelectedPart::Main => {
                             match app.current_main_page_state {
                                 CurrentMainPageState::VersionGroupSelection => {
-                                    app.selected_version = app
-                                        .version_groups
-                                        .get_selected()
-                                        .and_then(|t| Some(t.clone()));
+                                    app.on_version_group_selected();
                                 }
                                 CurrentMainPageState::BasicInfo => {
-                                    app.pokemon_moves_list_state = SwitchableTableState::new();
-                                    if let Some(current_pokemon) = app.current_pokemon.as_ref() {
-                                        if current_pokemon.abilities.is_empty()
-                                            && current_pokemon.moves.is_empty()
-                                        {
-                                            app.loading = true;
-                                            terminal.draw(|frame| render(frame, &mut app))?;
-                                            app.fetch_abilities_and_moves().await;
-                                            app.loading = false;
-                                        }
-                                    }
+                                    app.on_moves_and_abilities_open(|app| {
+                                        terminal.draw(|frame| render(frame, app)).unwrap();
+                                    })
+                                    .await;
                                 }
                                 _ => {}
                             }
-                            app.current_main_page_state = app.current_main_page_state.get_next();
+                            app.switch_main_page_state();
                         }
                     },
                     KeyCode::Char(c) => match app.selected_part {
                         SelectedPart::List => {
-                            app.search.push(c);
-                            app.filter_list();
+                            app.on_search_append(c);
                         }
                         _ => {}
                     },
                     KeyCode::Backspace => match app.selected_part {
                         SelectedPart::List => {
-                            app.search.pop();
-                            app.filter_list();
+                            app.on_search_remove();
                         }
                         _ => {}
                     },
