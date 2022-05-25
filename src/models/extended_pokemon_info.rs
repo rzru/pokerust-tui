@@ -5,6 +5,7 @@ use tui::{
     text::{Span, Spans},
     widgets::Row,
 };
+use rayon::prelude::*;
 
 use crate::utils::PrepareForDisplay;
 
@@ -26,9 +27,9 @@ impl ExtendedPokemonInfo {
             .and_then(|abilities| {
                 Some(
                     abilities
-                        .iter()
+                        .par_iter()
                         .filter_map(|ability| {
-                            let extended_ability = self.abilities.iter().find(|extended_ability| {
+                            let extended_ability = self.abilities.par_iter().find_any(|extended_ability| {
                                 if let Some(item_ability) = ability.ability.as_ref() {
                                     return extended_ability
                                         .name
@@ -107,7 +108,7 @@ impl ExtendedPokemonInfo {
             .and_then(|pokemon_moves| {
                 Some(
                     pokemon_moves
-                        .iter()
+                        .par_iter()
                         .filter_map(|pokemon_move| {
                             pokemon_move
                                 .get_renderable_version_group_details(selected_version_group)
@@ -163,9 +164,9 @@ impl ExtendedPokemonInfo {
         });
 
         prepared_moves
-            .iter()
+            .par_iter()
             .filter_map(|(pokemon_move, move_versions)| {
-                let extended_pokemon_move = self.moves.iter().find(|extended_move| {
+                let extended_pokemon_move = self.moves.par_iter().find_any(|extended_move| {
                     if let Some(pokemon_move) = pokemon_move.de_move.as_ref() {
                         return extended_move.name.as_ref().unwrap_or(&"".to_string())
                             == pokemon_move.name.as_ref().unwrap_or(&"".to_string());
@@ -183,7 +184,7 @@ impl ExtendedPokemonInfo {
     pub fn get_renderable_encounters(&self, selected_version_group: &str) -> Vec<Row> {
         self
             .encounters
-            .iter()
+            .par_iter()
             .flat_map(|encounter| encounter.get_renderable_as_rows(selected_version_group))
             .collect()
     }

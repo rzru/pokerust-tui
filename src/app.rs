@@ -1,4 +1,5 @@
 use tokio::join;
+use rayon::prelude::*;
 
 use crate::{
     http::{fetch_external, Http},
@@ -162,7 +163,7 @@ impl App {
         self.pokemon_list.items_to_render = self
             .pokemon_list
             .items
-            .iter()
+            .par_iter()
             .filter_map(|pokemon| {
                 let should_be_included = pokemon
                     .get_name_or_stub()

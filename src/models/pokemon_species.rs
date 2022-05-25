@@ -4,6 +4,7 @@ use tui::{
     text::Span,
     widgets::Row,
 };
+use rayon::prelude::*;
 
 use crate::utils::PrepareForDisplay;
 
@@ -54,7 +55,7 @@ impl PokemonSpecies {
             .and_then(|pokedex_numbers| {
                 Some(
                     pokedex_numbers
-                        .iter()
+                        .par_iter()
                         .map(|pokedex_number| {
                             Row::new(vec![
                                 Span::styled(

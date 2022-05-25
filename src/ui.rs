@@ -9,6 +9,7 @@ use tui::{
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
+use rayon::prelude::*;
 
 use crate::{
     app::{App, CurrentMainPageState, SelectedPart},
@@ -153,7 +154,7 @@ fn render_version_groups_selection_list(frame: &mut CrosstermFrame, app: &mut Ap
     let version_groups_to_render: Vec<ListItem> = app
         .version_groups
         .items_to_render
-        .iter()
+        .par_iter()
         .map(|version_group| {
             let name: &str = version_group.name.as_ref().unwrap().as_ref();
             let name = name.to_string().split_capitalize();
@@ -181,7 +182,7 @@ fn render_list(frame: &mut CrosstermFrame, app: &mut App, area: Rect, style: Sty
     let pokemon_items_to_render: Vec<ListItem> = app
         .pokemon_list
         .items_to_render
-        .iter()
+        .par_iter()
         .map(|pokemon| {
             let name: &str = pokemon.name.as_ref().unwrap().as_ref();
             let name = name.to_string().split_capitalize();

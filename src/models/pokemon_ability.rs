@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use tui::{text::Span, widgets::Row};
+use rayon::prelude::*;
 
 use crate::utils::PrepareForDisplay;
 
@@ -59,7 +60,7 @@ impl PokemonAbilityExt {
             .and_then(|verbose_effects| {
                 Some(
                     verbose_effects
-                        .iter()
+                        .par_iter()
                         .filter(|verbose_effect| verbose_effect.get_language() == "en")
                         .collect::<Vec<&VerboseEffect>>(),
                 )

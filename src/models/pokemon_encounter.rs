@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
 use tui::{widgets::Row, text::Span};
+use rayon::prelude::*;
 
 use crate::utils::PrepareForDisplay;
 
@@ -63,7 +64,7 @@ impl PokemonEncounterVersionDetail {
             .encounter_details
             .as_ref()
             .and_then(|encounter_details| {
-                encounter_details.iter().max_by(|a, b| a.max_level.cmp(&b.max_level))
+                encounter_details.par_iter().max_by(|a, b| a.max_level.cmp(&b.max_level))
             })
             .and_then(|encounter_detail| encounter_detail.max_level)
             .unwrap_or(0);
@@ -72,7 +73,7 @@ impl PokemonEncounterVersionDetail {
             .encounter_details
             .as_ref()
             .and_then(|encounter_details| {
-                encounter_details.iter().min_by(|a, b| a.min_level.cmp(&b.min_level))
+                encounter_details.par_iter().min_by(|a, b| a.min_level.cmp(&b.min_level))
             })
             .and_then(|encounter_detail| encounter_detail.min_level)
             .unwrap_or(0);
@@ -104,8 +105,8 @@ impl PokemonEncounter {
             .as_ref()
             .and_then(|version_details| {
                 version_details
-                    .iter()
-                    .find(|version| {
+                    .par_iter()
+                    .find_any(|version| {
                         if selected_version_group
                             .to_string()
                             .split("-")
