@@ -102,7 +102,7 @@ fn prepare_chunks(frame: &CrosstermFrame) -> (Rect, Rect, Rect) {
 
 fn prepare_main_block_chunks(area: Rect) -> (Rect, Rect) {
     let main_block_chunks = Layout::default()
-        .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
+        .constraints([Constraint::Percentage(25), Constraint::Percentage(75)].as_ref())
         .margin(1)
         .direction(Direction::Horizontal)
         .split(area);
