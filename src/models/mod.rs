@@ -13,6 +13,7 @@ pub mod pokemon_stat;
 pub mod pokemon_type;
 pub mod verbose_effect;
 pub mod version_game_index;
+pub mod pokemon_encounter;
 
 pub use api_resource::APIResource;
 pub use extended_pokemon_info::ExtendedPokemonInfo;
@@ -29,3 +30,4 @@ pub use pokemon_stat::PokemonStat;
 pub use pokemon_type::PokemonType;
 pub use verbose_effect::VerboseEffect;
 pub use version_game_index::VersionGameIndex;
+pub use pokemon_encounter::PokemonEncounter;

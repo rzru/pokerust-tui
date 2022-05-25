@@ -8,13 +8,14 @@ use tui::{
 
 use crate::utils::PrepareForDisplay;
 
-use super::{pokemon_move::PokemonMoveExt, Pokemon, PokemonAbilityExt, PokemonSpecies};
+use super::{pokemon_move::PokemonMoveExt, Pokemon, PokemonAbilityExt, PokemonSpecies, PokemonEncounter};
 
 pub struct ExtendedPokemonInfo {
     pub pokemon: Pokemon,
     pub abilities: Vec<PokemonAbilityExt>,
     pub moves: Vec<PokemonMoveExt>,
     pub species: PokemonSpecies,
+    pub encounters: Vec<PokemonEncounter>,
 }
 
 impl ExtendedPokemonInfo {
@@ -176,6 +177,14 @@ impl ExtendedPokemonInfo {
                 pokemon_move
                     .get_renderable_as_row(extended_pokemon_move, move_versions.first().unwrap())
             })
+            .collect()
+    }
+
+    pub fn get_renderable_encounters(&self, selected_version_group: &str) -> Vec<Row> {
+        self
+            .encounters
+            .iter()
+            .flat_map(|encounter| encounter.get_renderable_as_rows(selected_version_group))
             .collect()
     }
 }
@@ -360,6 +369,7 @@ mod tests {
                 flavor_text_entries: None,
                 pokedex_numbers: None,
             },
+            encounters: vec![]
         }
     }
 
