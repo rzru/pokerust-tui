@@ -1,10 +1,10 @@
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use tui::{
     style::{Color, Style},
     text::Span,
     widgets::Row,
 };
-use rayon::prelude::*;
 
 use crate::utils::PrepareForDisplay;
 

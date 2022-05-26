@@ -1,15 +1,17 @@
 use std::cmp::Ordering;
 
+use rayon::prelude::*;
 use tui::{
     style::{Color, Style},
     text::{Span, Spans},
     widgets::Row,
 };
-use rayon::prelude::*;
 
 use crate::utils::PrepareForDisplay;
 
-use super::{pokemon_move::PokemonMoveExt, Pokemon, PokemonAbilityExt, PokemonSpecies, PokemonEncounter};
+use super::{
+    pokemon_move::PokemonMoveExt, Pokemon, PokemonAbilityExt, PokemonEncounter, PokemonSpecies,
+};
 
 pub struct ExtendedPokemonInfo {
     pub pokemon: Pokemon,
@@ -29,17 +31,21 @@ impl ExtendedPokemonInfo {
                     abilities
                         .par_iter()
                         .filter_map(|ability| {
-                            let extended_ability = self.abilities.par_iter().find_any(|extended_ability| {
-                                if let Some(item_ability) = ability.ability.as_ref() {
-                                    return extended_ability
-                                        .name
-                                        .as_ref()
-                                        .unwrap_or(&"".to_string())
-                                        == item_ability.name.as_ref().unwrap_or(&"".to_string());
-                                }
+                            let extended_ability =
+                                self.abilities.par_iter().find_any(|extended_ability| {
+                                    if let Some(item_ability) = ability.ability.as_ref() {
+                                        return extended_ability
+                                            .name
+                                            .as_ref()
+                                            .unwrap_or(&"".to_string())
+                                            == item_ability
+                                                .name
+                                                .as_ref()
+                                                .unwrap_or(&"".to_string());
+                                    }
 
-                                false
-                            });
+                                    false
+                                });
 
                             ability.get_renderable_as_row(extended_ability)
                         })
@@ -182,8 +188,7 @@ impl ExtendedPokemonInfo {
     }
 
     pub fn get_renderable_encounters(&self, selected_version_group: &str) -> Vec<Row> {
-        self
-            .encounters
+        self.encounters
             .par_iter()
             .flat_map(|encounter| encounter.get_renderable_as_rows(selected_version_group))
             .collect()
@@ -199,9 +204,10 @@ mod tests {
     };
 
     use crate::models::{
-        NamedApiResource, Pokemon, PokemonAbility, PokemonAbilityExt, PokemonHeldItem,
-        PokemonHeldItemVersion, PokemonMove, PokemonMoveExt, PokemonMoveVersion, PokemonSpecies,
-        PokemonStat, PokemonType, VerboseEffect, PokemonEncounter, pokemon_encounter::{PokemonEncounterVersionDetail, PokemonEncounterDetail},
+        pokemon_encounter::{PokemonEncounterDetail, PokemonEncounterVersionDetail},
+        NamedApiResource, Pokemon, PokemonAbility, PokemonAbilityExt, PokemonEncounter,
+        PokemonHeldItem, PokemonHeldItemVersion, PokemonMove, PokemonMoveExt, PokemonMoveVersion,
+        PokemonSpecies, PokemonStat, PokemonType, VerboseEffect,
     };
 
     use super::ExtendedPokemonInfo;
@@ -374,150 +380,128 @@ mod tests {
                 PokemonEncounter {
                     location_area: Some(NamedApiResource {
                         name: Some(String::from("kanto-route-1")),
-                        url: None
+                        url: None,
                     }),
-                    version_details: Some(
-                        vec![
-                            PokemonEncounterVersionDetail {
-                                max_chance: Some(70),
-                                version: Some(NamedApiResource {
-                                    name: Some(String::from("y")),
-                                    url: None
-                                }),
-                                encounter_details: Some(
-                                    vec![
-                                        PokemonEncounterDetail {
-                                            chance: Some(50),
-                                            min_level: Some(1),
-                                            max_level: Some(10),
-                                            method: Some(NamedApiResource {
-                                                name: Some(String::from("walk")),
-                                                url: None
-                                            })
-                                        },
-                                        PokemonEncounterDetail {
-                                            chance: Some(50),
-                                            min_level: Some(1),
-                                            max_level: Some(10),
-                                            method: Some(NamedApiResource {
-                                                name: Some(String::from("walk")),
-                                                url: None
-                                            })
-                                        },
-                                        PokemonEncounterDetail {
-                                            chance: Some(70),
-                                            min_level: Some(5),
-                                            max_level: Some(25),
-                                            method: Some(NamedApiResource {
-                                                name: Some(String::from("long grass")),
-                                                url: None
-                                            })
-                                        }
-                                    ]
-                                )
-                            },
-                            PokemonEncounterVersionDetail {
-                                max_chance: Some(100),
-                                version: Some(NamedApiResource {
-                                    name: Some(String::from("x")),
-                                    url: None
-                                }),
-                                encounter_details: Some(
-                                    vec![
-                                        PokemonEncounterDetail {
-                                            chance: Some(50),
-                                            min_level: Some(1),
-                                            max_level: Some(10),
-                                            method: Some(NamedApiResource {
-                                                name: Some(String::from("walk")),
-                                                url: None
-                                            })
-                                        },
-                                        PokemonEncounterDetail {
-                                            chance: Some(50),
-                                            min_level: Some(1),
-                                            max_level: Some(10),
-                                            method: Some(NamedApiResource {
-                                                name: Some(String::from("walk")),
-                                                url: None
-                                            })
-                                        },
-                                        PokemonEncounterDetail {
-                                            chance: Some(100),
-                                            min_level: Some(5),
-                                            max_level: Some(15),
-                                            method: Some(NamedApiResource {
-                                                name: Some(String::from("gift")),
-                                                url: None
-                                            })
-                                        }
-                                    ]
-                                )
-                            }
-                        ]
-                    )
+                    version_details: Some(vec![
+                        PokemonEncounterVersionDetail {
+                            max_chance: Some(70),
+                            version: Some(NamedApiResource {
+                                name: Some(String::from("y")),
+                                url: None,
+                            }),
+                            encounter_details: Some(vec![
+                                PokemonEncounterDetail {
+                                    chance: Some(50),
+                                    min_level: Some(1),
+                                    max_level: Some(10),
+                                    method: Some(NamedApiResource {
+                                        name: Some(String::from("walk")),
+                                        url: None,
+                                    }),
+                                },
+                                PokemonEncounterDetail {
+                                    chance: Some(50),
+                                    min_level: Some(1),
+                                    max_level: Some(10),
+                                    method: Some(NamedApiResource {
+                                        name: Some(String::from("walk")),
+                                        url: None,
+                                    }),
+                                },
+                                PokemonEncounterDetail {
+                                    chance: Some(70),
+                                    min_level: Some(5),
+                                    max_level: Some(25),
+                                    method: Some(NamedApiResource {
+                                        name: Some(String::from("long grass")),
+                                        url: None,
+                                    }),
+                                },
+                            ]),
+                        },
+                        PokemonEncounterVersionDetail {
+                            max_chance: Some(100),
+                            version: Some(NamedApiResource {
+                                name: Some(String::from("x")),
+                                url: None,
+                            }),
+                            encounter_details: Some(vec![
+                                PokemonEncounterDetail {
+                                    chance: Some(50),
+                                    min_level: Some(1),
+                                    max_level: Some(10),
+                                    method: Some(NamedApiResource {
+                                        name: Some(String::from("walk")),
+                                        url: None,
+                                    }),
+                                },
+                                PokemonEncounterDetail {
+                                    chance: Some(50),
+                                    min_level: Some(1),
+                                    max_level: Some(10),
+                                    method: Some(NamedApiResource {
+                                        name: Some(String::from("walk")),
+                                        url: None,
+                                    }),
+                                },
+                                PokemonEncounterDetail {
+                                    chance: Some(100),
+                                    min_level: Some(5),
+                                    max_level: Some(15),
+                                    method: Some(NamedApiResource {
+                                        name: Some(String::from("gift")),
+                                        url: None,
+                                    }),
+                                },
+                            ]),
+                        },
+                    ]),
                 },
                 PokemonEncounter {
                     location_area: Some(NamedApiResource {
                         name: Some(String::from("kanto-route-2")),
-                        url: None
+                        url: None,
                     }),
-                    version_details: Some(
-                        vec![
-                            PokemonEncounterVersionDetail {
-                                max_chance: Some(100),
-                                version: Some(NamedApiResource {
-                                    name: Some(String::from("sun")),
-                                    url: None
-                                }),
-                                encounter_details: Some(
-                                    vec![
-                                        PokemonEncounterDetail {
-                                            chance: Some(50),
-                                            min_level: Some(1),
-                                            max_level: Some(10),
-                                            method: Some(NamedApiResource {
-                                                name: Some(String::from("walk")),
-                                                url: None
-                                            })
-                                        },
-                                    ]
-                                )
-                            }
-                        ]
-                    )
+                    version_details: Some(vec![PokemonEncounterVersionDetail {
+                        max_chance: Some(100),
+                        version: Some(NamedApiResource {
+                            name: Some(String::from("sun")),
+                            url: None,
+                        }),
+                        encounter_details: Some(vec![PokemonEncounterDetail {
+                            chance: Some(50),
+                            min_level: Some(1),
+                            max_level: Some(10),
+                            method: Some(NamedApiResource {
+                                name: Some(String::from("walk")),
+                                url: None,
+                            }),
+                        }]),
+                    }]),
                 },
                 PokemonEncounter {
                     location_area: Some(NamedApiResource {
                         name: Some(String::from("kanto-route-3")),
-                        url: None
+                        url: None,
                     }),
-                    version_details: Some(
-                        vec![
-                            PokemonEncounterVersionDetail {
-                                max_chance: Some(10),
-                                version: Some(NamedApiResource {
-                                    name: Some(String::from("y")),
-                                    url: None
-                                }),
-                                encounter_details: Some(
-                                    vec![
-                                        PokemonEncounterDetail {
-                                            chance: Some(10),
-                                            min_level: Some(10),
-                                            max_level: Some(12),
-                                            method: Some(NamedApiResource {
-                                                name: Some(String::from("long grass")),
-                                                url: None
-                                            })
-                                        },
-                                    ]
-                                )
-                            }
-                        ]
-                    )
+                    version_details: Some(vec![PokemonEncounterVersionDetail {
+                        max_chance: Some(10),
+                        version: Some(NamedApiResource {
+                            name: Some(String::from("y")),
+                            url: None,
+                        }),
+                        encounter_details: Some(vec![PokemonEncounterDetail {
+                            chance: Some(10),
+                            min_level: Some(10),
+                            max_level: Some(12),
+                            method: Some(NamedApiResource {
+                                name: Some(String::from("long grass")),
+                                url: None,
+                            }),
+                        }]),
+                    }]),
                 },
-            ]
+            ],
         }
     }
 
@@ -657,16 +641,17 @@ mod tests {
         );
         assert_eq!(
             extended_pokemon_info.get_renderable_encounters("sun-moon"),
-            vec![
-                Row::new(vec![
-                    Span::raw("\u{A0}Kanto Route 2"),
-                    Span::raw("Walk"),
-                    Span::raw("Sun"),
-                    Span::raw("100"),
-                    Span::raw("1 - 10"),
-                ]),
-            ],
+            vec![Row::new(vec![
+                Span::raw("\u{A0}Kanto Route 2"),
+                Span::raw("Walk"),
+                Span::raw("Sun"),
+                Span::raw("100"),
+                Span::raw("1 - 10"),
+            ]),],
         );
-        assert_eq!(extended_pokemon_info.get_renderable_encounters("red-green"), vec![])
+        assert_eq!(
+            extended_pokemon_info.get_renderable_encounters("red-green"),
+            vec![]
+        )
     }
 }

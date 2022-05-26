@@ -1,8 +1,8 @@
+use rayon::prelude::*;
 use tui::{
     style::{Color, Style},
     text::Span,
 };
-use rayon::prelude::*;
 
 pub fn uppercase_first_letter(s: &str) -> String {
     let mut c = s.chars();

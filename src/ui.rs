@@ -1,5 +1,6 @@
 use std::{io::Stdout, vec};
 
+use rayon::prelude::*;
 use tui::{
     backend::CrosstermBackend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -9,7 +10,6 @@ use tui::{
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
-use rayon::prelude::*;
 
 use crate::{
     app::{App, CurrentMainPageState, SelectedPart},
@@ -36,7 +36,8 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
     if let Some(current_pokemon) = app.current_pokemon.as_mut() {
         match app.current_main_page_state {
             CurrentMainPageState::BasicInfo => {
-                let selected_version_group = app.selected_version_group
+                let selected_version_group = app
+                    .selected_version_group
                     .as_ref()
                     .unwrap()
                     .name
@@ -45,24 +46,28 @@ pub fn render(frame: &mut CrosstermFrame, app: &mut App) {
 
                 let basic_info_table = get_renderable_basic_info_table(current_pokemon);
                 let pokemon_stats_table = get_renderable_pokemon_stats_table(current_pokemon);
-                let (pokemon_held_items_table, held_items_count) = get_renderable_pokemon_held_items_table(
-                    current_pokemon,
-                    selected_version_group
-                );
-                let (pokemon_encounters_table, encounters_count) = get_renderable_pokemon_encounters_table(
-                    current_pokemon,
-                    selected_version_group
-                );
+                let (pokemon_held_items_table, held_items_count) =
+                    get_renderable_pokemon_held_items_table(
+                        current_pokemon,
+                        selected_version_group,
+                    );
+                let (pokemon_encounters_table, encounters_count) =
+                    get_renderable_pokemon_encounters_table(
+                        current_pokemon,
+                        selected_version_group,
+                    );
                 let pokedex_numbers_table = get_renderable_pokedex_numbers_table(current_pokemon);
-                let (abilities_table, abilities_count) = get_renderable_pokemon_abilities_table(current_pokemon);
-                let (moves_table, moves_count) = get_renderable_pokemon_moves_table(
-                    current_pokemon,
-                    selected_version_group
-                );
+                let (abilities_table, abilities_count) =
+                    get_renderable_pokemon_abilities_table(current_pokemon);
+                let (moves_table, moves_count) =
+                    get_renderable_pokemon_moves_table(current_pokemon, selected_version_group);
                 app.rendered_moves_count = Some(moves_count);
 
-                let (abilities_area, encounters_area, moves_area) =
-                    prepare_main_block_right_chunks(right_area, encounters_count as u16, abilities_count as u16);
+                let (abilities_area, encounters_area, moves_area) = prepare_main_block_right_chunks(
+                    right_area,
+                    encounters_count as u16,
+                    abilities_count as u16,
+                );
                 let (basic_info_area, pokemon_stats_area, held_items_area, pokedex_numbers_area) =
                     prepare_basic_info_chunks(basic_info_area, held_items_count as u16);
 
@@ -110,13 +115,28 @@ fn prepare_main_block_chunks(area: Rect) -> (Rect, Rect) {
     (main_block_chunks[0], main_block_chunks[1])
 }
 
-fn prepare_main_block_right_chunks(area: Rect, encounters_count: u16, abilities_count: u16) -> (Rect, Rect, Rect) {
+fn prepare_main_block_right_chunks(
+    area: Rect,
+    encounters_count: u16,
+    abilities_count: u16,
+) -> (Rect, Rect, Rect) {
     let main_block_chunks = Layout::default()
-        .constraints([Constraint::Length(abilities_count + 3), Constraint::Length(encounters_count + 3), Constraint::Percentage(90)].as_ref())
+        .constraints(
+            [
+                Constraint::Length(abilities_count + 3),
+                Constraint::Length(encounters_count + 3),
+                Constraint::Percentage(90),
+            ]
+            .as_ref(),
+        )
         .direction(Direction::Vertical)
         .split(area);
 
-    (main_block_chunks[0], main_block_chunks[1], main_block_chunks[2])
+    (
+        main_block_chunks[0],
+        main_block_chunks[1],
+        main_block_chunks[2],
+    )
 }
 
 fn prepare_version_group_selection_area(area: Rect) -> Rect {
@@ -273,23 +293,22 @@ fn get_renderable_pokemon_held_items_table<'a>(
     current_pokemon: &'a ExtendedPokemonInfo,
     selected_version_group: &str,
 ) -> (Table<'a>, usize) {
-    let held_items = 
-        current_pokemon
-            .pokemon
-            .get_renderable_held_items(selected_version_group);
+    let held_items = current_pokemon
+        .pokemon
+        .get_renderable_held_items(selected_version_group);
     let held_items_count = held_items.len();
     let table = Table::new(held_items)
-    .block(Block::default().title(Spans::from(Span::styled(
-        "\u{A0}Held items",
-        Style::default().add_modifier(Modifier::BOLD),
-    ))))
-    .widths(&[
-        Constraint::Length(14),
-        Constraint::Length(6),
-        Constraint::Percentage(100),
-    ])
-    .column_spacing(1);
-    
+        .block(Block::default().title(Spans::from(Span::styled(
+            "\u{A0}Held items",
+            Style::default().add_modifier(Modifier::BOLD),
+        ))))
+        .widths(&[
+            Constraint::Length(14),
+            Constraint::Length(6),
+            Constraint::Percentage(100),
+        ])
+        .column_spacing(1);
+
     (table, held_items_count)
 }
 
@@ -297,27 +316,31 @@ fn get_renderable_pokemon_encounters_table<'a>(
     current_pokemon: &'a ExtendedPokemonInfo,
     selected_version_group: &str,
 ) -> (Table<'a>, usize) {
-    let encounters = 
-        current_pokemon
-            .get_renderable_encounters(selected_version_group);
+    let encounters = current_pokemon.get_renderable_encounters(selected_version_group);
     let encounters_count = encounters.len();
     let table = Table::new(encounters)
-    .block(Block::default().title(Spans::from(Span::styled(
-        "\u{A0}Encounters",
-        Style::default().add_modifier(Modifier::BOLD),
-    ))))
-    .header(
-        Row::new(vec!["\u{A0}Location", "Methods", "Version", "Max Chance", "Levels"])
+        .block(Block::default().title(Spans::from(Span::styled(
+            "\u{A0}Encounters",
+            Style::default().add_modifier(Modifier::BOLD),
+        ))))
+        .header(
+            Row::new(vec![
+                "\u{A0}Location",
+                "Methods",
+                "Version",
+                "Max Chance",
+                "Levels",
+            ])
             .style(Style::default().fg(Color::Blue)),
-    )
-    .widths(&[
-        Constraint::Percentage(30),
-        Constraint::Percentage(30),
-        Constraint::Percentage(10),
-        Constraint::Percentage(15),
-        Constraint::Percentage(15),
-    ])
-    .column_spacing(1);
+        )
+        .widths(&[
+            Constraint::Percentage(30),
+            Constraint::Percentage(30),
+            Constraint::Percentage(10),
+            Constraint::Percentage(15),
+            Constraint::Percentage(15),
+        ])
+        .column_spacing(1);
 
     (table, encounters_count)
 }

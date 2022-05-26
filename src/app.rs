@@ -1,9 +1,12 @@
-use tokio::join;
 use rayon::prelude::*;
+use tokio::join;
 
 use crate::{
     http::{fetch_external, Http},
-    models::{ExtendedPokemonInfo, NamedApiResource, Pokemon, PokemonMoveExt, PokemonSpecies, PokemonEncounter},
+    models::{
+        ExtendedPokemonInfo, NamedApiResource, Pokemon, PokemonEncounter, PokemonMoveExt,
+        PokemonSpecies,
+    },
     models::{ListWrapper, PokemonAbilityExt},
     stateful_list::StatefulList,
     switchable_table_state::SwitchableTableState,
@@ -125,7 +128,11 @@ impl App {
                 .species
                 .as_ref()
                 .and_then(|species| species.url.as_ref());
-            let encounters_url = format!("{}pokemon/{}/encounters", POKEAPI_DEFAULT_URL, pokemon.id.unwrap());
+            let encounters_url = format!(
+                "{}pokemon/{}/encounters",
+                POKEAPI_DEFAULT_URL,
+                pokemon.id.unwrap()
+            );
 
             let (species, encounters): (Option<PokemonSpecies>, Option<Vec<PokemonEncounter>>) = join!(
                 self.http.get_as_object(&species_url.unwrap()),
