@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use tui::{
     style::{Color, Style},
     text::Span,
@@ -98,7 +99,7 @@ impl PrepareForDisplay for String {
     fn split_capitalize(self) -> Self {
         self.split("-")
             .collect::<Vec<&str>>()
-            .iter()
+            .par_iter()
             .map(|str| uppercase_first_letter(str))
             .collect::<Vec<String>>()
             .join(" ")

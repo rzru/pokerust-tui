@@ -1,8 +1,12 @@
+use rayon::prelude::*;
 use tokio::join;
 
 use crate::{
     http::{fetch_external, Http},
-    models::{ExtendedPokemonInfo, NamedApiResource, Pokemon, PokemonMoveExt, PokemonSpecies},
+    models::{
+        ExtendedPokemonInfo, NamedApiResource, Pokemon, PokemonEncounter, PokemonMoveExt,
+        PokemonSpecies,
+    },
     models::{ListWrapper, PokemonAbilityExt},
     stateful_list::StatefulList,
     switchable_table_state::SwitchableTableState,
@@ -120,21 +124,27 @@ impl App {
         let pokemon: Option<Pokemon> = self.http.get_as_object(&uri).await;
 
         if let Some(pokemon) = pokemon {
-            let mut species: Option<PokemonSpecies> = None;
             let species_url = pokemon
                 .species
                 .as_ref()
                 .and_then(|species| species.url.as_ref());
+            let encounters_url = format!(
+                "{}pokemon/{}/encounters",
+                POKEAPI_DEFAULT_URL,
+                pokemon.id.unwrap()
+            );
 
-            if let Some(species_url) = species_url {
-                species = self.http.get_as_object(&species_url).await;
-            }
+            let (species, encounters): (Option<PokemonSpecies>, Option<Vec<PokemonEncounter>>) = join!(
+                self.http.get_as_object(&species_url.unwrap()),
+                self.http.get_as_object(&encounters_url)
+            );
 
             self.current_pokemon = Some(ExtendedPokemonInfo {
                 pokemon,
                 abilities: vec![],
                 moves: vec![],
                 species: species.unwrap(),
+                encounters: encounters.unwrap(),
             });
         }
     }
@@ -160,7 +170,7 @@ impl App {
         self.pokemon_list.items_to_render = self
             .pokemon_list
             .items
-            .iter()
+            .par_iter()
             .filter_map(|pokemon| {
                 let should_be_included = pokemon
                     .get_name_or_stub()

@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use tui::{
     style::{Color, Style},
@@ -54,7 +55,7 @@ impl PokemonSpecies {
             .and_then(|pokedex_numbers| {
                 Some(
                     pokedex_numbers
-                        .iter()
+                        .par_iter()
                         .map(|pokedex_number| {
                             Row::new(vec![
                                 Span::styled(

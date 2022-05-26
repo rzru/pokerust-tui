@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use tui::{text::Span, widgets::Row};
 
@@ -78,7 +79,7 @@ impl Pokemon {
             .and_then(|types| {
                 Some(
                     types
-                        .iter()
+                        .par_iter()
                         .map(|pokemon_type| pokemon_type.get_renderable())
                         .collect(),
                 )
@@ -92,7 +93,7 @@ impl Pokemon {
             .and_then(|stats| {
                 Some(
                     stats
-                        .iter()
+                        .par_iter()
                         .map(|stat| stat.get_renderable_as_row())
                         .collect(),
                 )

@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use tui::{
     style::{Color, Style},
@@ -25,7 +26,7 @@ impl PokemonMove {
             .as_ref()
             .and_then(|version_group_details| {
                 let items = version_group_details
-                    .iter()
+                    .par_iter()
                     .filter_map(|version_group_detail| {
                         if let Some(version_group) = version_group_detail.version_group.as_ref() {
                             if version_group.get_name_or_stub() == selected_version_group {
@@ -132,7 +133,7 @@ impl PokemonMoveExt {
             .and_then(|verbose_effects| {
                 Some(
                     verbose_effects
-                        .iter()
+                        .par_iter()
                         .filter(|verbose_effect| verbose_effect.get_language() == "en")
                         .collect::<Vec<&VerboseEffect>>(),
                 )

@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use tui::{
     style::{Color, Style},
@@ -35,7 +36,7 @@ impl PokemonHeldItem {
             .and_then(|version_details| {
                 Some(
                     version_details
-                        .iter()
+                        .par_iter()
                         .filter_map(|item_version| {
                             item_version.version.as_ref().and_then(|version| {
                                 if selected_version_group
