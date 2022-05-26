@@ -98,15 +98,13 @@ impl PokemonEncounter {
     }
 
     pub fn get_renderable_as_rows(&self, selected_version_group: &str) -> Vec<Row> {
-        let mut result = vec![];
-
-        let version_detail_by_version_group = self
+        let version_detail_by_version_groups = self
             .version_details
             .as_ref()
             .and_then(|version_details| {
-                version_details
+                Some(version_details
                     .par_iter()
-                    .find_any(|version| {
+                    .filter(|version| {
                         if selected_version_group
                             .to_string()
                             .split("-")
@@ -119,18 +117,157 @@ impl PokemonEncounter {
 
                         false
                     })
+                    .collect::<Vec<&PokemonEncounterVersionDetail>>())
             });
 
-        if let Some(version_detail_by_version_group) = version_detail_by_version_group {
-            result.push(Row::new(vec![
-                self.get_renderable_location_area(),
-                version_detail_by_version_group.get_renderable_methods(),
-                version_detail_by_version_group.get_renderable_version(),
-                version_detail_by_version_group.get_renderable_max_chance(),
-                version_detail_by_version_group.get_renderable_levels(),
-            ]));
+        if let Some(version_detail_by_version_groups) = version_detail_by_version_groups {
+            return version_detail_by_version_groups
+                .par_iter()
+                .map(|version_detail_by_version_group| {
+                    Row::new(vec![
+                        self.get_renderable_location_area(),
+                        version_detail_by_version_group.get_renderable_methods(),
+                        version_detail_by_version_group.get_renderable_version(),
+                        version_detail_by_version_group.get_renderable_max_chance(),
+                        version_detail_by_version_group.get_renderable_levels(),
+                    ])
+                })
+                .collect();
         }
 
-        result
+        vec![]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tui::{text::Span, widgets::Row};
+
+    use crate::models::NamedApiResource;
+
+    use super::{PokemonEncounterDetail, PokemonEncounterVersionDetail, PokemonEncounter};
+
+    fn get_stubbed_pokemon_encounter_detail() -> PokemonEncounterDetail {
+        PokemonEncounterDetail {
+            chance: Some(50),
+            min_level: Some(1),
+            max_level: Some(10),
+            method: Some(NamedApiResource {
+                name: Some(String::from("walk")),
+                url: None
+            })
+        }
+    }
+
+    fn get_stubbed_pokemon_encounter_version_detail() -> PokemonEncounterVersionDetail {
+        PokemonEncounterVersionDetail {
+            max_chance: Some(10),
+            version: Some(NamedApiResource {
+                name: Some(String::from("y")),
+                url: None
+            }),
+            encounter_details: Some(
+                vec![
+                    get_stubbed_pokemon_encounter_detail(),
+                    PokemonEncounterDetail {
+                        chance: Some(50),
+                        min_level: Some(20),
+                        max_level: Some(40),
+                        method: Some(NamedApiResource {
+                            name: Some(String::from("headbutt")),
+                            url: None
+                        })
+                    },
+                    PokemonEncounterDetail {
+                        chance: Some(50),
+                        min_level: Some(11),
+                        max_level: Some(35),
+                        method: Some(NamedApiResource {
+                            name: Some(String::from("walk")),
+                            url: None
+                        })
+                    }
+                ]
+            )
+        }
+    }
+
+    fn get_stubbed_pokemon_encounter() -> PokemonEncounter {
+        PokemonEncounter {
+            location_area: Some(NamedApiResource {
+                name: Some(String::from("kanto-route-3")),
+                url: None
+            }),
+            version_details: Some(
+                vec![
+                    get_stubbed_pokemon_encounter_version_detail(),
+                    PokemonEncounterVersionDetail {
+                        max_chance: Some(100),
+                        version: Some(NamedApiResource {
+                            name: Some(String::from("x")),
+                            url: None
+                        }),
+                        encounter_details: Some(
+                            vec![
+                                PokemonEncounterDetail {
+                                    chance: Some(1),
+                                    min_level: Some(100),
+                                    max_level: Some(100),
+                                    method: Some(NamedApiResource {
+                                        name: Some(String::from("something")),
+                                        url: None
+                                    })
+                                }
+                            ]
+                        )
+                    }
+                ]
+            )
+        }
+    }
+
+    #[test]
+    fn pokemon_encounter_version_detail_get_renderable_version() {
+        let encounter_version_detail = get_stubbed_pokemon_encounter_version_detail();
+        assert_eq!(encounter_version_detail.get_renderable_version(), Span::raw("Y"))
+    }
+
+    #[test]
+    fn pokemon_encounter_version_detail_get_renderable_methods() {
+        let encounter_version_detail = get_stubbed_pokemon_encounter_version_detail();
+        assert_eq!(encounter_version_detail.get_renderable_methods(), Span::raw("Walk, Headbutt"))
+    }
+
+    #[test]
+    fn pokemon_encounter_version_detail_get_renderable_max_chance() {
+        let encounter_version_detail = get_stubbed_pokemon_encounter_version_detail();
+        assert_eq!(encounter_version_detail.get_renderable_max_chance(), Span::raw("10"))
+    }
+
+    #[test]
+    fn pokemon_encounter_version_detail_get_renderable_levels() {
+        let encounter_version_detail = get_stubbed_pokemon_encounter_version_detail();
+        assert_eq!(encounter_version_detail.get_renderable_levels(), Span::raw("1 - 40"))
+    }
+
+    #[test]
+    fn pokemon_encounter_get_renderable_rows() {
+        let encounter = get_stubbed_pokemon_encounter();
+        assert_eq!(encounter.get_renderable_as_rows("x-y"), vec![
+            Row::new(vec![
+                Span::raw("\u{A0}Kanto Route 3"),
+                Span::raw("Walk, Headbutt"),
+                Span::raw("Y"),
+                Span::raw("10"),
+                Span::raw("1 - 40"),
+            ]),
+            Row::new(vec![
+                Span::raw("\u{A0}Kanto Route 3"),
+                Span::raw("Something"),
+                Span::raw("X"),
+                Span::raw("100"),
+                Span::raw("100 - 100"),
+            ])
+        ])
     }
 }
